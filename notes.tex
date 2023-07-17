@@ -13,7 +13,7 @@
 \bibliographystyle{apalike}
 
 \usepackage{hyperref}
-\hypersetup{colorlinks,linkcolor={blue},citecolor={blue},urlcolor={red}}  
+\hypersetup{colorlinks,linkcolor={blue},citecolor={blue},urlcolor={blue}}  
 
 
 \author{Gregor Steiner}
@@ -23,7 +23,7 @@
 
 \maketitle
 
-This document collects my notes on \cite{evans_didelez_2023}. They propose a new parameterization of the distributions of interest, termed \textbf{frugal parameterization}, which consists of three pieces: the joint distribution of the treatment and covariates $p_{ZX}(z, x)$, the causal distribution of interest $p_{Y | X}^* (y|x)$, and a dependence measure between the outcome and the treatment conditional on the covariates $\phi_{YZ | X}^*$. In sequential treatment models \citep[see][Figure 2]{evans_didelez_2023}, this parameterization can avoid the so-called \textbf{g-null paradox} \citep{robins_wasserman_1997}. \\
+This document collects my notes on \cite{evans_didelez_2023}. They propose a new parameterization of the distributions of interest, termed \textbf{frugal parameterization}, which consists of three pieces: the joint distribution of the treatment and covariates $p_{ZX}(z, x)$ (the 'past'), the causal distribution of interest $p_{Y | X}^* (y|x)$, and a dependence measure between the outcome and the covariates conditional on the treatment $\phi_{YZ | X}^*$. In sequential treatment models \citep[see][Figure 2]{evans_didelez_2023}, this parameterization circumvents the so-called \textbf{g-null paradox} \citep{robins_wasserman_1997}. The corresponding R-package \href{https://github.com/rje42/causl}{causl} provides functions to simulate from a frugal parametrization. \\
 
 \textbf{Comments/Questions:}
 \begin{itemize}
