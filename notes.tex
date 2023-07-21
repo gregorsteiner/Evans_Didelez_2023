@@ -15,6 +15,15 @@
 \usepackage{hyperref}
 \hypersetup{colorlinks,linkcolor={blue},citecolor={blue},urlcolor={blue}}  
 
+\usepackage{tkz-graph}
+\usetikzlibrary{arrows.meta,
+	shapes.geometric}%
+\tikzstyle{VertexStyle} = [shape=ellipse,
+minimum width=6ex,
+draw]
+\tikzstyle{EdgeStyle} = [-Stealth]
+
+\usepackage{subfig}
 
 \author{Gregor Steiner}
 \title{Notes on Evans \& Didelez (2023)}
@@ -23,10 +32,39 @@
 
 \maketitle
 
-This document collects my notes on \cite{evans_didelez_2023}. They propose a new parameterization for causal problems, termed \textbf{frugal parameterization}, which consists of three pieces: the joint distribution of the treatment and covariates $p_{ZX}(z, x)$ (the 'past'), the causal distribution of interest $p_{Y | X}^* (y|x)$, and a dependence measure between the outcome and the covariates conditional on the treatment $\phi_{YZ | X}^*$. In sequential treatment models, this parameterization circumvents the so-called \textbf{g-null paradox} \citep{robins_wasserman_1997}. Their main result shows that a frugal parametrization $\theta = (\theta_{ZX}, \theta_{Y|X}, \phi_{YZ | X})$ of the observational distribution induces a corresponding parameterization  $\theta^* = (\theta_{ZX}, \theta_{Y|X}^*, \phi_{YZ | X}^*)$ that is also frugal. Replacing $\theta_{ZX}$ in $\theta^*$ with $\eta_{ZX}(\theta_{ZX})$, where $\eta_{ZX}$ is a twice differentiable function with a Jacobian of constant rank, yields a parameterization of the causal joint distribution $p_{ZXY}^*$. Using this, they propose a rejection sampling algorithm to sample from $p_{ZXY}$ (implemented in the R-package \href{https://github.com/rje42/causl}{causl}). Furthermore, they show that under certain assumptions we can obtain consistent parameter estimates for the model $p_{Y | X}^*$ by maximizing the likelihood with respect to the observational data from $p_{ZXY}$. \\
+This document collects my notes on \cite{evans_didelez_2023}. They propose a new parameterization for causal problems, termed \textbf{frugal parameterization}, which consists of three pieces: the joint distribution of the treatment and covariates $p_{ZX}(z, x)$ (the 'past'), the causal distribution of interest $p_{Y | X}^* (y|x)$, and a dependence measure between the outcome and the covariates conditional on the treatment $\phi_{YZ | X}^*$ (could be a conditional odds-ratio or a copula). In sequential treatment models, this parameterization circumvents the so-called \textbf{g-null paradox} \citep{robins_wasserman_1997}. Their main result shows that a frugal parametrization $\theta = (\theta_{ZX}, \theta_{Y|X}, \phi_{YZ | X})$ of the observational distribution induces a corresponding parameterization  $\theta^* = (\theta_{ZX}, \theta_{Y|X}^*, \phi_{YZ | X}^*)$ that is also frugal. Replacing $\theta_{ZX}$ in $\theta^*$ with $\eta_{ZX}(\theta_{ZX})$, where $\eta_{ZX}$ is a twice differentiable function with a Jacobian of constant rank, yields a parameterization of the causal joint distribution $p_{ZXY}^*$. Using this, they propose a rejection sampling algorithm to sample from $p_{ZXY}$ (implemented in the R-package \href{https://github.com/rje42/causl}{causl}). Furthermore, they show that under certain assumptions we can obtain consistent parameter estimates for the model $p_{Y | X}^*$ by maximizing the likelihood with respect to the observational data from $p_{ZXY}$. 
+
+As far as I understand, the main advantage of the frugal parameterization is that it provides a convenient characterization of the joint distribution $p_{ZXY}$, which is usually unknown or difficult to handle. Instead, we can specify a model for $p_{ZX}(z, x)$ and $p_{Y | X}^* (y|x)$ and choose a dependence measure of $Y$ and $Z$ conditional on $X$. Then, we can use these three to perform likelihood-based inference or simulate from the joint distribution. Consider the following example corresponding to Figure \ref{fig:dag}: The joint distribution can be factorized into the frugal parameterization:
+
+\begin{align}
+	p_{ZXY}(z, x, y | \theta^*) &= p_{ZX}(z, x | \theta_{ZX}) p_{Y|ZX}^*(y|z, x) \\
+	&= p_{ZX}(z, x | \theta_{ZX}) p_X^*(y | x; \theta_{Y|X}^*) c(y, z| x),
+\end{align}
+
+where $c(y, z | x) =: \phi_{YZ | X}^* $ is a copula density for continuous $Y$ and $Z$ given $X$. Given observations for $(Y, X, Z)$, we can estimate $\theta^*$ by maximizing the expression above. Or we can even obtain a posterior distribution
+\begin{align}
+	p(\theta^* | z, x, y) \propto p_{ZXY}(z, x, y | \theta^*) p(\theta^*),
+\end{align}
+where $p(\theta^*)$ is some prior distribution. \\
+
+
+
+\begin{figure} 
+	\caption{Causal diagram}
+	\label{fig:dag}
+	\centering
+	\begin{tikzpicture}[scale=2]
+		\Vertex{X} \EA(X){Y} \NO(X){Z}
+		\Edges(X, Y)
+		\Edges(Z, Y)
+		\Edges(Z, X)
+	\end{tikzpicture}
+\end{figure}
+
 
 \textbf{Comments/Questions:}
 \begin{itemize}
+	\item It's not clear to me what the role of $\eta_{ZX}$ is and how we obtain it. Is it chosen by the analyst?
 	\item The parameterization is not unique: Given $p_{Y|X}^*$, $p_{ZX}$ and the dependence measure $ \phi_{YZ | X}^*$ need to be chosen. How do we choose them? Can this choice introduce uncertainty that is not accounted for, maybe like selective inference type problems?
 	\item Similarly, what happens if the causal model $p_{Y|X}^*$ is misspecified? Then, the causal and observational joint distributions will be misspecified as well, leading to false simulation results, right?
 \end{itemize}
