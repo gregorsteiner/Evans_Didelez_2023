@@ -23,8 +23,6 @@ minimum width=6ex,
 draw]
 \tikzstyle{EdgeStyle} = [-Stealth]
 
-\usepackage{subfig}
-
 \author{Gregor Steiner}
 \title{Notes on Evans \& Didelez (2023)}
 
@@ -53,21 +51,20 @@ My understanding is that the main advantage of the frugal parameterization is th
 	&= p_{ZX}(z, x | \theta_{ZX}) p_{Y|X}^*(y | x; \theta_{Y|X}^*) c(y, z| x),
 \end{align*}
 
-where $c(y, z | x) =: \phi_{YZ | X}^* $ is a copula density for continuous $Y$ and $Z$ given $X$. I am not sure if this factorisation holds in the discrete case with a conditional odds-ratio. Given observations for $(Y, X, Z)$, we can estimate $\theta^*$ by maximizing the expression above. 
+where $c(y, z | x) =: \phi_{YZ | X}^* $ is a copula density for continuous $Y$ and $Z$ given $X$. Given observations for $(Y, X, Z)$, we can estimate $\theta^*$ by maximizing the expression above. 
+
 In their abstract, they mention that this can be used to conduct Bayesian inference, but do not discuss this in the main text. I assume this would work as follows: We can obtain a joint posterior distribution
 \begin{align*}
 	p(\theta^* | z, x, y) \propto p_{ZXY}(z, x, y | \theta^*) p(\theta^*),
 \end{align*}
-and then get a posterior distribution for the marginal model $p_{Y|X}^*$
+where $p(\theta^*)$ is some prior distribution. Then, we can find the posterior distribution for the parameters of the marginal model $p_{Y|X}^*$ by integrating out $\theta_{ZX}$ and $\phi_{YZ | X}^*$,
 \begin{align*}
-	p(\theta_{Y|X}^* | z, x, y) \propto \int \int p_{ZXY}(z, x, y | \theta^*) p(\theta^*) d\theta_{ZX} d\phi_{YZ | X}^*.
+	p(\theta_{Y|X}^* | z, x, y) &= \int \int p(\theta^* | z, x, y) d\theta_{ZX} d\phi_{YZ | X}^*.
 \end{align*} \\
-
 
 
 \textbf{Comments/Questions:}
 \begin{itemize}
-	\item Bayesian inference in this framework (see above)?
 	\item I don't quite understand what the role of $\eta_{ZX}$ is and how we obtain it. Is it chosen by the analyst?
 	\item It seems that for the MLE to be consistent the joint model has to be correctly specified. However, the propensity score model can be misspecified. So one only has to correctly specify the marginal model and the dependence measure? This still seems much more restrictive than a doubly robust estimator, while the performance is comparable in their simulations.
 \end{itemize}
