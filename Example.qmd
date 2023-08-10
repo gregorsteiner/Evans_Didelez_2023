@@ -1,0 +1,35 @@
+---
+title: "Example"
+author: "Gregor Steiner"
+date: last-modified
+editor: visual
+theme: cosmo
+toc: true  
+number-sections: true
+colorlinks: true
+highlight-style: pygments
+format:
+  html: 
+    code-fold: true
+    code-tools: true
+    html-math-method: katex
+    self-contained: true
+bibliography: references.bib
+---
+
+# Data
+
+We use the well-known Lalonde dataset as in @dw_1999 to investigate the causal effect of a job training programme on real earnings.
+
+```{r}
+#| tbl-cap: "Chracteristics by treatment status"
+
+lalonde <- haven::read_dta("http://www.nber.org/~rdehejia/data/nsw_dw.dta")
+
+within(lalonde[, -1], treat <- factor(ifelse(treat == 1, "Treated", "Control"))) |>
+  gtsummary::tbl_summary(by = treat) 
+```
+
+
+
+
