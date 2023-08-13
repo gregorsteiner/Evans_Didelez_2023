@@ -46,12 +46,13 @@ This document collects my notes on \cite{evans_didelez_2023}. Consider the causa
 
 My understanding is that the main advantage of the frugal parameterization is that it provides a convenient characterization of the joint distribution $p_{ZXY}$, which is usually unknown or difficult to handle. Instead, we can specify a model for $p_{ZX}$ and $p_{Y | X}^*$ and choose a dependence measure of $Y$ and $Z$ conditional on $X$. Then, we can use these three to perform likelihood-based inference or simulate from the joint distribution. The joint distribution can be factorized into the frugal parameterization:
 
-\begin{align*}
-	p_{ZXY}(z, x, y | \theta^*) &= p_{ZX}(z, x | \theta_{ZX}) p_{Y|ZX}^*(y|z, x) \\
+\begin{align} \label{frugal_fact}
+	p_{ZXY}(z, x, y | \theta^*) &= p_{ZX}(z, x | \theta_{ZX}) p_{Y|ZX}^*(y|z, x; \theta_{Y|X}^*, \phi_{YZ | X}^*) \\
 	&= p_{ZX}(z, x | \theta_{ZX}) p_{Y|X}^*(y | x; \theta_{Y|X}^*) c(y, z| x),
-\end{align*}
+\end{align}
 
-where $c(y, z | x) =: \phi_{YZ | X}^* $ is a copula density for continuous $Y$ and $Z$ given $X$. Given observations for $(Y, X, Z)$, we can estimate $\theta^*$ by maximizing the expression above. 
+where $c(y, z | x) = \phi_{YZ | X}^* $ is a copula density for continuous $Y$ and $Z$ given $X$. In the words
+ Given observations for $(Y, X, Z)$, we can estimate $\theta^*$ by maximizing the expression above. 
 
 In their abstract, they mention that this can be used to conduct Bayesian inference, but do not discuss this in the main text. I assume this would work as follows: We can obtain a joint posterior distribution
 \begin{align*}
@@ -65,20 +66,10 @@ where $p(\theta^*)$ is some prior distribution. Then, we can find the posterior 
 
 \textbf{Comments/Questions:}
 \begin{itemize}
-	\item I don't quite understand what the role of $\eta_{ZX}$ is and how we obtain it. Is it chosen by the analyst?
+	\item In the words of \cite{engle1983}, (\ref{frugal_fact}) implies that $[(y|z, x; \theta_{Y|X}^*, \phi_{YZ | X}^*), (z, x ;  \theta_{ZX})]$ operates a sequential cut on their joint distribution (if $(\theta_{Y|X}^*, \phi_{YZ | X}^*)$ and $\theta_{ZX}$ are variation free). Therefore, if we can find a frugal paramterization, $(x, z)$ are weakly exogenous for any function of $\theta_{Y|X}^*$.
+	\item What is the role of $\eta_{ZX}$?
 	\item It seems that for the MLE to be consistent the joint model has to be correctly specified. However, the propensity score model can be misspecified. So one only has to correctly specify the marginal model and the dependence measure? This still seems much more restrictive than a doubly robust estimator, while the performance is comparable in their simulations.
 \end{itemize}
-
-\textbf{Further reading:} 
-\begin{itemize}
-	\item \cite{saarela_2015}.
-	\item \cite{robins_wasserman_1997} and \cite{mcgrath2022revisiting} to better understand the g-null paradox. Also, problem 29.1 in \cite{ding2023course} is similar to their example R2.
-	\item \cite{Bergsma_Rudas_2002} to better understand the discrete case and for some of the proofs.
-\end{itemize}
-
-
-
-
 
 
 
