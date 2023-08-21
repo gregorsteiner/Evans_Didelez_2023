@@ -27,108 +27,22 @@ library(ggplot2)
 ```
 
 
-# Data
 
-We use the well-known Lalonde dataset as in @dw_1999 to investigate the causal effect of a job training programme (**treat**) on real earnings (**re78**).
-
+# Simulate Data
 
 ```{r}
-#| tbl-cap: "Chracteristics by treatment status"
 
-lalonde <- haven::read_dta("http://www.nber.org/~rdehejia/data/nsw_dw.dta")
-
-within(lalonde[, -1], treat <- factor(ifelse(treat == 1, "Treated", "Control"))) |>
-  gtsummary::tbl_summary(by = treat) 
-```
-
-
-# Causal Structure
-
-It is reasonable to assume that the covariates $Z = (\text{age}, \text{education}, \text{black}, \text{hispanic}, \text{married}, \text{nodegree}, \text{re74}, \text{re75})^{\intercal}$ act as confounders, since all of them are likely to affect both the propensity to attend the job training programme as well as earnings. Let $Y$ be the real earnings and let $X$ be the treatment indicator. Then, we assume unconfoundedness, that is given covariates $Z$, the potential outcomes $\left( Y(1), Y(0) \right)$ and the treatment $X$ are independent. Under unconfoundedness, the average treatment effect (ATE) $\tau := E[Y(1) - Y(0)]$ is generally identifiable:
-
-\begin{align*}
-\tau(Z) &:= E[Y(1) - Y(0) | Z] \\ &= E[Y(1) | Z, X = 1] - E[Y(0) | Z, X = 0] \\ &= E[Y | Z, X = 1] - E[Y | Z, X = 0],
-\end{align*}
-
-which is observable and therefore
-$$
-\tau = E[ \tau(Z)] = \int \tau(Z) dP_Z
-$$
-is identified.
-
-# Analysis
-
-## Outcome Regression
-
-A simple approach is regressing $Y$ on $X$ and $Z$:
-$$
-Y = Z \beta + \delta X + \varepsilon, \; \varepsilon \sim N(0, \Sigma)
-$$
-If the model is correctly specified, we get
-$$
-\tau(Z) = E[Y | Z, X = 1] - E[Y | Z, X = 0] = \delta,
-$$
-
-which is constant in $Z$ and therefore the ATE is $\tau = \delta$.
-
-```{r}
-fit <- lm(
-  re78 ~ treat + age + education + black + hispanic + married + nodegree + re74 + re75,
-  data = lalonde
-)
-delta.ols <- fit$coefficients["treat"]
+n <- 100
+d <- data.frame(Z = rnorm(n))
+d <- within(d, {
+  X <- rnorm(n, Z)
+  Y <- X + Z
+})
 
 ```
 
 
-First, we estimate this using OLS and obtain a point estimate of $\widehat{\tau}_{LS} = `r round(delta.ols, 2)`$. Associated inference will be unreliable since the residuals distribution is far from a normal one, but we will ignore this issue for now and only focus on the point estimate.
-
-Now, we estimate this in a Bayesian fashion. The result is relatively similar. The posterior distribution of $\tau$ is centered around the LS estimator $\widehat{\tau}_{LS}$.
-
-```{r message=FALSE, warning=FALSE}
-#| label: fig-delta-post
-#| fig-cap: "Posterior distribution of the ATE"
-fit.bayes <- brm(
-  re78 ~ treat + age + education + black + hispanic + married + nodegree + re74 + re75,
-  data = lalonde,
-  prior = set_prior("normal(0, 100000)", "b"),
-  warmup = 1000, iter = 2000, chains = 4,
-  silent = 2, refresh = 0
-)
 
 
-mcmc_dens(fit.bayes, pars = "b_treat") +
-  labs(x = latex2exp::TeX("\\tau | (Y, X, Z)")) +
-  vline_at(delta.ols, col = 2, lwd = 1) +
-  theme_bw()
-
-```
-
-
-## Inverse Probability Weighting
-
-Another way to obtain an estimate for the ATE is by inverse probability weighting (IPW). First, we must fit a model for the propensity score $e(Z) = P(X = 1 | Z)$. Then, we can compute the IPW estimator
-$$
-\widehat{\tau}_{IPW} = \frac{1}{n} \sum_{i=1}^n \frac{X_i * Y_i}{\widehat{e}(Z)} - \frac{1}{n} \sum_{i=1}^n \frac{(1 - X_i) * Y_i}{(1- \widehat{e}(Z))}.
-$$
-
-
-```{r}
-# fit propensity model
-fit.prop <- glm(
-  treat ~ age + education + black + hispanic + married + nodegree + re74 + re75,
-  data = lalonde,
-  family = "binomial"
-)
-# get predicted probabilities
-prop <- predict(fit.prop, type = "response")
-
-# compute IPW etimator
-tau.ipw <- with(lalonde, mean( (treat * re78) / prop - ((1 - treat) * re78) / (1 - prop) ))
-
-
-```
-
-We obtain $\widehat{\tau}_{IPW} = `r round(tau.ipw, 2)`$, which is slightly lower than the LS estimator from above.
 
 
