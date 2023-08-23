@@ -48,10 +48,10 @@ My understanding is that the main advantage of the frugal parameterization is th
 
 \begin{align} \label{frugal_fact}
 	p_{ZXY}(z, x, y | \theta^*) &= p_{ZX}(z, x | \theta_{ZX}) p_{Y|ZX}^*(y|z, x; \theta_{Y|X}^*, \phi_{YZ | X}^*) \\
-	&= p_{ZX}(z, x | \theta_{ZX}) p_{Y|X}^*(y | x; \theta_{Y|X}^*) c(y, z| x),
+	&= p_{ZX}(z, x | \theta_{ZX}) p_{Y|X}^*(y | x; \theta_{Y|X}^*) c(y, z| x; \phi_{YZ | X}^*),
 \end{align}
 
-where $c(y, z | x) = \phi_{YZ | X}^* $ is a copula density for continuous $Y$ and $Z$ given $X$. Given observations for $(Y, X, Z)$, we can estimate $\theta^*$ by maximizing the expression above.
+where $c(y, z | x; \phi_{YZ | X}^*)$ is a copula density for continuous $Y$ and $Z$ given $X$. Given observations for $(Y, X, Z)$, we can estimate $\theta^*$ by maximizing the expression above.
 
 In their abstract, they mention that this can be used to conduct Bayesian inference, but do not discuss this in the main text. I assume this would work as follows: We can obtain a joint posterior distribution
 \begin{align*}
@@ -67,7 +67,6 @@ where $p(\theta^*)$ is some prior distribution. Then, we can find the posterior 
 \begin{itemize}
 	\item In the words of \cite{engle1983}, (\ref{frugal_fact}) implies that $[(y|z, x; \theta_{Y|X}^*, \phi_{YZ | X}^*), (z, x ;  \theta_{ZX})]$ operates a sequential cut on their joint distribution (if $(\theta_{Y|X}^*, \phi_{YZ | X}^*)$ and $\theta_{ZX}$ are variation free). Therefore, if we can find a frugal paramterization, $(x, z)$ are weakly exogenous for any function of $\theta_{Y|X}^*$. Did I get this right?
 	\item What is the role of $\eta_{ZX}$?
-	\item Why is it useful to simulate from the observational distribution $p_{ZXY}$?
 \end{itemize}
 
 
