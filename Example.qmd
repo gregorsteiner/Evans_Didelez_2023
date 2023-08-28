@@ -83,105 +83,6 @@ Now, we try to fit this in a Bayesian fashion. We implement a simple Metropolis 
 likl <- function(theta){
   beta <- theta[1]; sigma <- theta[2]
   beta_z <- theta[3]; sigma_z <- theta[4]
-  
-  with(dat, {
-    # marginal structural model
-    p_Y_X <- dnorm(Y, beta * X, sigma, log = TRUE) |> sum()
-    
-    # past
-    p_ZX <- dnorm(Z, beta_z, sigma_z, log = TRUE) |> sum() +
-      dnorm(X, log = TRUE) |> sum()
-    
-    # estimate plug in estimate for phi by group
-    bool <- X == 1
-    phi_1 <- cor(Y[bool], Z[bool])
-    phi_0 <- cor(Y[!bool], Z[!bool])
-
-    # get copula density separately by group
-    cop_1 <- copula::normalCopula(param = phi_1)
-    u_1 <- matrix(NA, nrow = sum(bool), ncol = 2)
-    u_1[, 1] <- pnorm(Y[bool], beta * X[bool], sigma)
-    u_1[, 2] <- pnorm(Z[bool], beta_z, sigma_z)
-    copd_1 <- copula::dCopula(cop_1, u = u_1, log = TRUE) |> sum()
-    
-    cop_0 <- copula::normalCopula(param = phi_0)
-    u_0 <- matrix(NA, nrow = sum(!bool), ncol = 2)
-    u_0[, 1] <- pnorm(Y[!bool], beta * X[!bool], sigma)
-    u_0[, 2] <- pnorm(Z[!bool], beta_z, sigma_z)
-    copd_0 <- copula::dCopula(cop_0, u = u_0, log = TRUE) |> sum()
-    
-    copd <- copd_0 + copd_1
-    
-    # return sum (since we did all calculations on a log-scale)
-    return(p_Y_X + p_ZX + copd)
-    })
-}
-
-
-```
-
-```{r}
-library(mvtnorm)
-
-# prior parameters
-p <- 4
-sigma_p <- diag(rep(10, p))
-mu_p <- c(1, 1, 1, 1)
-prior <- function(theta) 1 / (theta[2] * theta[4])
-
-# jump distribution parameters
-sigma_j <- diag(c(0.001, 0.001, 0.001, 0.001))
-
-# initial values
-theta_0 <- c(0.5, 1.2, 1.5, 0.8)
-
-# storage
-m <- 5e3
-warm <- 1e3
-store <- matrix(NA, nrow = m, ncol = p)
-colnames(store) <- c("beta", "sigma", "beta_Z", "sigma_Z")
-store[1, ] <- theta_0
-
-set.seed(12)
-for (i in 2:m) {
-  curr <- store[i-1, ]
-  prop <- rmvnorm(1, curr, sigma_j)
-  prop[c(2, 4)] <- ifelse(prop[c(2, 4)] <= 0, 1, prop[c(2, 4)])
-  
-  r <- (likl(prop) + prior(prop)) - (likl(curr) + prior(curr))
-  
-  if(runif(1) < min(exp(r), 1)){
-    store[i, ] <- prop
-  } else{
-    store[i, ] <- curr
-  }
-  
-}
-
-
-
-```
-
-
-
-```{r}
-par(mfrow = c(1, 2), mar = c(4, 4, 1, 1))
-hist(store[warm:m, 1], breaks = 40, freq = FALSE, 
-     main = "", xlab = "Beta")
-plot(store[warm:m, 1], type = "l",
-     main = "",
-     ylab = "Beta", xlab = "")
-```
-The posterior distribution of beta is nicely centered around the true value of 1.
-
-## Fully Bayesian
-
-Here, we try a fully Bayesian approach, that is we do not plug in an estimate for $\phi$, but include it in the parameter vector and also obtain a posterior distribution. However, it is important to keep the dependence on the group, so we sample separately for $\phi_1$ and $\phi_0$, where $\phi_i = \text{Cor}(Y, Z | X = i)$.
-
-```{r}
-likl <- function(theta){
-  beta <- theta[1]; sigma <- theta[2]
-  beta_z <- theta[3]; sigma_z <- theta[4]
   phi_1 <- theta[5]; phi_0 <- theta[6]
   
   with(dat, {
@@ -212,7 +113,70 @@ likl <- function(theta){
     return(p_Y_X + p_ZX + copd)
     })
 }
+
 ```
+
+```{r}
+library(mvtnorm)
+
+# get plug in estimate for phi
+phi_1 <- with(dat, cor(Y[X == 1], Z[X == 1]))
+phi_0 <- with(dat, cor(Y[X == 0], Z[X == 0]))
+
+# prior parameters
+p <- 4
+sigma_p <- diag(rep(10, p))
+mu_p <- c(1, 1, 1, 1)
+prior <- function(theta) 1 / (theta[2] * theta[4])
+
+# jump distribution parameters
+sigma_j <- diag(c(0.001, 0.001, 0.001, 0.001))
+
+# initial values
+theta_0 <- c(0.5, 1.2, 1.5, 0.8)
+
+# storage
+m <- 5e3
+warm <- 1e3
+store <- matrix(NA, nrow = m, ncol = p)
+colnames(store) <- c("beta", "sigma", "beta_Z", "sigma_Z")
+store[1, ] <- theta_0
+
+set.seed(12)
+for (i in 2:m) {
+  curr <- store[i-1, ]
+  prop <- rmvnorm(1, curr, sigma_j)
+  prop[c(2, 4)] <- ifelse(prop[c(2, 4)] <= 0, 1, prop[c(2, 4)])
+  
+  r <- (likl(c(prop, phi_1, phi_0)) + prior(prop)) - (likl(c(curr, phi_1, phi_0)) + prior(curr))
+  
+  if(runif(1) < min(exp(r), 1)){
+    store[i, ] <- prop
+  } else{
+    store[i, ] <- curr
+  }
+  
+}
+
+
+
+```
+
+
+
+```{r}
+par(mfrow = c(1, 2), mar = c(4, 4, 1, 1))
+hist(store[warm:m, 1], breaks = 40, freq = FALSE, 
+     main = "", xlab = "Beta")
+plot(store[warm:m, 1], type = "l",
+     main = "",
+     ylab = "Beta", xlab = "")
+```
+The posterior distribution of beta is nicely centered around the true value of 1.
+
+## Fully Bayesian
+
+Here, we try a fully Bayesian approach, that is we do not plug in an estimate for $\phi$, but include it in the parameter vector and also obtain a posterior distribution. However, it is important to keep the dependence on the group, so we sample separately for $\phi_1$ and $\phi_0$, where $\phi_i = \text{Cor}(Y, Z | X = i)$.
 
 
 ```{r}
@@ -276,9 +240,7 @@ hist(store[warm:m, 5], breaks = 40, freq = FALSE,
 hist(store[warm:m, 6], breaks = 40, freq = FALSE, 
      main = "", xlab = "Phi_0")
 ```
-
-Here we see that the dependence of $Z$ and $Y$ very much depends on the treatment. Among treated observations the correlation is about 0.5, while it is close to zero among control units.
-
+The posterior distributions for $\phi_1$ and $\phi_0$ look very different, suggesting that the relationship between $Z$ and $Y$ heavily depends on the treatment.
 
 
 
