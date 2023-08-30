@@ -19,9 +19,12 @@ bibliography: references.bib
 
 # Simulate Data
 
-First, we simulate data based on a simple example with a binary treatment $X$. The outcome $Y$ given an intervention on $X$ is distributed normally, that is 
-$$Y | \text{do}(X = x) \sim N(\beta x, \sigma^2),$$
-where we set $\beta = 1$. The confounder $Z$ also follows a normal distribution with parameters $\mu_Z = 1$ and $\sigma_Z^2 = 1$. 
+This notebook works through a simple example using the frugal parameterization proposed by @evans_didelez_2023 . First, we simulate data based on a simple model with an outcome $Y$, a binary treatment $X$, and a confounder $Z$. The setup is
+$$ Z \sim N(\mu_Z, \sigma_Z) \\
+X | Z = z \sim N(z, 1) \\
+Y | \text{do}(X = x) \sim N(\beta x, \sigma^2).$$
+
+Thus, the frugal parameterization consists of $\theta_{ZX} = (\mu_Z, \sigma_Z)$, $\theta_{Y|X}^* = (\beta, \sigma^2)$, and $\phi_{YZ|X}^*$, the correlation parameter of $Y$ and $Z$ conditional on $X$. The data is simulated with $\beta = 1$, $\sigma^2 = 1$, $\mu_Z = 1$ and $\sigma_Z^2 = 1$.
 
 ```{r message=FALSE, warning=FALSE}
 library(causl)

@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 <meta name="author" content="Gregor Steiner">
-<meta name="dcterms.date" content="2023-08-28">
+<meta name="dcterms.date" content="2023-08-30">
 
 <title>Example</title>
 <style>
@@ -3107,7 +3107,7 @@ vertical-align: -.125em;
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">August 28, 2023</p>
+      <p class="date">August 30, 2023</p>
     </div>
   </div>
   
@@ -3119,7 +3119,10 @@ vertical-align: -.125em;
 
 <section id="simulate-data" class="level1" data-number="1">
 <h1 data-number="1"><span class="header-section-number">1</span> Simulate Data</h1>
-<p>First, we simulate data based on a simple example with a binary treatment <span class="math inline">X</span>. The outcome <span class="math inline">Y</span> given an intervention on <span class="math inline">X</span> is distributed normally, that is <span class="math display">Y | \text{do}(X = x) \sim N(\beta x, \sigma^2),</span> where we set <span class="math inline">\beta = 1</span>. The confounder <span class="math inline">Z</span> also follows a normal distribution with parameters <span class="math inline">\mu_Z = 1</span> and <span class="math inline">\sigma_Z^2 = 1</span>.</p>
+<p>This notebook works through a simple example using the frugal parameterization proposed by <span class="citation" data-cites="evans_didelez_2023">Evans and Didelez (<a href="#ref-evans_didelez_2023" role="doc-biblioref">2023</a>)</span> . First, we simulate data based on a simple model with an outcome <span class="math inline">Y</span>, a binary treatment <span class="math inline">X</span>, and a confounder <span class="math inline">Z</span>. The setup is <span class="math display"> Z \sim N(\mu_Z, \sigma_Z) \\
+X | Z = z \sim N(z, 1) \\
+Y | \text{do}(X = x) \sim N(\beta x, \sigma^2).</span></p>
+<p>Thus, the frugal parameterization consists of <span class="math inline">\theta_{ZX} = (\mu_Z, \sigma_Z)</span>, <span class="math inline">\theta_{Y|X}^* = (\beta, \sigma^2)</span>, and <span class="math inline">\phi_{YZ|X}^*</span>, the correlation parameter of <span class="math inline">Y</span> and <span class="math inline">Z</span> conditional on <span class="math inline">X</span>. The data is simulated with <span class="math inline">\beta = 1</span>, <span class="math inline">\sigma^2 = 1</span>, <span class="math inline">\mu_Z = 1</span> and <span class="math inline">\sigma_Z^2 = 1</span>.</p>
 <div class="cell">
 <details>
 <summary>Code</summary>
@@ -3682,230 +3685,233 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
 <span id="cb12-19"><a href="#cb12-19" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb12-20"><a href="#cb12-20" aria-hidden="true" tabindex="-1"></a><span class="fu"># Simulate Data</span></span>
 <span id="cb12-21"><a href="#cb12-21" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-22"><a href="#cb12-22" aria-hidden="true" tabindex="-1"></a>First, we simulate data based on a simple example with a binary treatment $X$. The outcome $Y$ given an intervention on $X$ is distributed normally, that is </span>
-<span id="cb12-23"><a href="#cb12-23" aria-hidden="true" tabindex="-1"></a>$$Y | \text{do}(X = x) \sim N(\beta x, \sigma^2),$$</span>
-<span id="cb12-24"><a href="#cb12-24" aria-hidden="true" tabindex="-1"></a>where we set $\beta = 1$. The confounder $Z$ also follows a normal distribution with parameters $\mu_Z = 1$ and $\sigma_Z^2 = 1$. </span>
-<span id="cb12-25"><a href="#cb12-25" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-26"><a href="#cb12-26" aria-hidden="true" tabindex="-1"></a><span class="in">```{r message=FALSE, warning=FALSE}</span></span>
-<span id="cb12-27"><a href="#cb12-27" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(causl)</span>
+<span id="cb12-22"><a href="#cb12-22" aria-hidden="true" tabindex="-1"></a>This notebook works through a simple example using the frugal parameterization proposed by @evans_didelez_2023 . First, we simulate data based on a simple model with an outcome $Y$, a binary treatment $X$, and a confounder $Z$. The setup is</span>
+<span id="cb12-23"><a href="#cb12-23" aria-hidden="true" tabindex="-1"></a>$$ Z \sim N(\mu_Z, \sigma_Z) <span class="sc">\\</span></span>
+<span id="cb12-24"><a href="#cb12-24" aria-hidden="true" tabindex="-1"></a>X | Z = z \sim N(z, 1) <span class="sc">\\</span></span>
+<span id="cb12-25"><a href="#cb12-25" aria-hidden="true" tabindex="-1"></a>Y | \text{do}(X = x) \sim N(\beta x, \sigma^2).$$</span>
+<span id="cb12-26"><a href="#cb12-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-27"><a href="#cb12-27" aria-hidden="true" tabindex="-1"></a>Thus, the frugal parameterization consists of $\theta_{ZX} = (\mu_Z, \sigma_Z)$, $\theta_{Y|X}^* = (\beta, \sigma^2)$, and $\phi_{YZ|X}^*$, the correlation parameter of $Y$ and $Z$ conditional on $X$. The data is simulated with $\beta = 1$, $\sigma^2 = 1$, $\mu_Z = 1$ and $\sigma_Z^2 = 1$.</span>
 <span id="cb12-28"><a href="#cb12-28" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-29"><a href="#cb12-29" aria-hidden="true" tabindex="-1"></a>forms <span class="ot">&lt;-</span> <span class="fu">list</span>(Z <span class="sc">~</span> <span class="dv">1</span>, </span>
-<span id="cb12-30"><a href="#cb12-30" aria-hidden="true" tabindex="-1"></a>              X <span class="sc">~</span> Z,</span>
-<span id="cb12-31"><a href="#cb12-31" aria-hidden="true" tabindex="-1"></a>              Y <span class="sc">~</span> X, </span>
-<span id="cb12-32"><a href="#cb12-32" aria-hidden="true" tabindex="-1"></a>              <span class="sc">~</span> X)</span>
-<span id="cb12-33"><a href="#cb12-33" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-34"><a href="#cb12-34" aria-hidden="true" tabindex="-1"></a>pars <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">Z =</span> <span class="fu">list</span>(<span class="at">beta =</span> <span class="dv">1</span>, <span class="at">phi =</span> <span class="dv">1</span>),</span>
-<span id="cb12-35"><a href="#cb12-35" aria-hidden="true" tabindex="-1"></a>             <span class="at">X =</span> <span class="fu">list</span>(<span class="at">beta =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">1</span>), <span class="at">phi =</span> <span class="dv">1</span>),</span>
-<span id="cb12-36"><a href="#cb12-36" aria-hidden="true" tabindex="-1"></a>             <span class="at">Y =</span> <span class="fu">list</span>(<span class="at">beta =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">1</span>), <span class="at">phi =</span> <span class="dv">1</span>),</span>
-<span id="cb12-37"><a href="#cb12-37" aria-hidden="true" tabindex="-1"></a>             <span class="at">cop =</span> <span class="fu">list</span>(<span class="at">beta =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">1</span>)))</span>
-<span id="cb12-38"><a href="#cb12-38" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-39"><a href="#cb12-39" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">12</span>)</span>
-<span id="cb12-40"><a href="#cb12-40" aria-hidden="true" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="fl">1e3</span></span>
-<span id="cb12-41"><a href="#cb12-41" aria-hidden="true" tabindex="-1"></a>dat <span class="ot">&lt;-</span> <span class="fu">rfrugalParam</span>(n, <span class="at">formulas =</span> forms, <span class="at">pars =</span> pars, </span>
-<span id="cb12-42"><a href="#cb12-42" aria-hidden="true" tabindex="-1"></a>                    <span class="at">family =</span> <span class="fu">list</span>(<span class="dv">1</span>, <span class="dv">5</span>, <span class="dv">1</span>, <span class="dv">1</span>), <span class="at">careful =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb12-43"><a href="#cb12-43" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-44"><a href="#cb12-44" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-45"><a href="#cb12-45" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb12-29"><a href="#cb12-29" aria-hidden="true" tabindex="-1"></a><span class="in">```{r message=FALSE, warning=FALSE}</span></span>
+<span id="cb12-30"><a href="#cb12-30" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(causl)</span>
+<span id="cb12-31"><a href="#cb12-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-32"><a href="#cb12-32" aria-hidden="true" tabindex="-1"></a>forms <span class="ot">&lt;-</span> <span class="fu">list</span>(Z <span class="sc">~</span> <span class="dv">1</span>, </span>
+<span id="cb12-33"><a href="#cb12-33" aria-hidden="true" tabindex="-1"></a>              X <span class="sc">~</span> Z,</span>
+<span id="cb12-34"><a href="#cb12-34" aria-hidden="true" tabindex="-1"></a>              Y <span class="sc">~</span> X, </span>
+<span id="cb12-35"><a href="#cb12-35" aria-hidden="true" tabindex="-1"></a>              <span class="sc">~</span> X)</span>
+<span id="cb12-36"><a href="#cb12-36" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-37"><a href="#cb12-37" aria-hidden="true" tabindex="-1"></a>pars <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">Z =</span> <span class="fu">list</span>(<span class="at">beta =</span> <span class="dv">1</span>, <span class="at">phi =</span> <span class="dv">1</span>),</span>
+<span id="cb12-38"><a href="#cb12-38" aria-hidden="true" tabindex="-1"></a>             <span class="at">X =</span> <span class="fu">list</span>(<span class="at">beta =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">1</span>), <span class="at">phi =</span> <span class="dv">1</span>),</span>
+<span id="cb12-39"><a href="#cb12-39" aria-hidden="true" tabindex="-1"></a>             <span class="at">Y =</span> <span class="fu">list</span>(<span class="at">beta =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">1</span>), <span class="at">phi =</span> <span class="dv">1</span>),</span>
+<span id="cb12-40"><a href="#cb12-40" aria-hidden="true" tabindex="-1"></a>             <span class="at">cop =</span> <span class="fu">list</span>(<span class="at">beta =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">1</span>)))</span>
+<span id="cb12-41"><a href="#cb12-41" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-42"><a href="#cb12-42" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">12</span>)</span>
+<span id="cb12-43"><a href="#cb12-43" aria-hidden="true" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="fl">1e3</span></span>
+<span id="cb12-44"><a href="#cb12-44" aria-hidden="true" tabindex="-1"></a>dat <span class="ot">&lt;-</span> <span class="fu">rfrugalParam</span>(n, <span class="at">formulas =</span> forms, <span class="at">pars =</span> pars, </span>
+<span id="cb12-45"><a href="#cb12-45" aria-hidden="true" tabindex="-1"></a>                    <span class="at">family =</span> <span class="fu">list</span>(<span class="dv">1</span>, <span class="dv">5</span>, <span class="dv">1</span>, <span class="dv">1</span>), <span class="at">careful =</span> <span class="cn">FALSE</span>)</span>
 <span id="cb12-46"><a href="#cb12-46" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb12-47"><a href="#cb12-47" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-48"><a href="#cb12-48" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-48"><a href="#cb12-48" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb12-49"><a href="#cb12-49" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-50"><a href="#cb12-50" aria-hidden="true" tabindex="-1"></a><span class="fu"># Maximum Likelihood</span></span>
+<span id="cb12-50"><a href="#cb12-50" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb12-51"><a href="#cb12-51" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-52"><a href="#cb12-52" aria-hidden="true" tabindex="-1"></a>We perform maximum likelihood estimation as described in @evans_didelez_2023 . The observational likelihood is given by</span>
-<span id="cb12-53"><a href="#cb12-53" aria-hidden="true" tabindex="-1"></a>\begin{align*}</span>
-<span id="cb12-54"><a href="#cb12-54" aria-hidden="true" tabindex="-1"></a>    p_{ZXY}(z, x, y | \theta^*) &amp;= p_{ZX}(z, x | \theta_{ZX}) p_{Y|ZX}^*(y|z, x; \theta_{Y|X}^*, \phi_{YZ | X}^*) <span class="sc">\\</span></span>
-<span id="cb12-55"><a href="#cb12-55" aria-hidden="true" tabindex="-1"></a>    &amp;= p_{ZX}(z, x | \theta_{ZX}) p_{Y|X}^*(y | x; \theta_{Y|X}^*) c(y, z| x; \phi_{YZ | X}^*),</span>
-<span id="cb12-56"><a href="#cb12-56" aria-hidden="true" tabindex="-1"></a>\end{align*}</span>
-<span id="cb12-57"><a href="#cb12-57" aria-hidden="true" tabindex="-1"></a>where $c(y, z| x; \phi_{YZ | X}^*)$ is a copula density. By substituting $p_{ZX}$ for the causal distribution $p_{ZX}^*$, where $Z$ and $X$ are independent, we obtain the causal likelihood. Now, we can maximise the causal likelihood w.r.t. the observational data to obtain an estimate for $\beta$. This is done below using the implementation by Robin Evans.</span>
-<span id="cb12-58"><a href="#cb12-58" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-59"><a href="#cb12-59" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-62"><a href="#cb12-62" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
-<span id="cb12-63"><a href="#cb12-63" aria-hidden="true" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">fitCausal</span>(dat, <span class="at">formulas =</span> <span class="fu">list</span>(Y <span class="sc">~</span> X, Z <span class="sc">~</span> <span class="dv">1</span>, <span class="sc">~</span> X),</span>
-<span id="cb12-64"><a href="#cb12-64" aria-hidden="true" tabindex="-1"></a>                 <span class="at">family =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">1</span>), <span class="at">control=</span><span class="fu">list</span>(<span class="at">maxit=</span><span class="fl">2e4</span>, <span class="at">newton=</span><span class="cn">TRUE</span>))</span>
-<span id="cb12-65"><a href="#cb12-65" aria-hidden="true" tabindex="-1"></a>fit</span>
-<span id="cb12-66"><a href="#cb12-66" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb12-67"><a href="#cb12-67" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-68"><a href="#cb12-68" aria-hidden="true" tabindex="-1"></a>The estimate is close to the true value of 1. For comparison, we can also perform a naive outcome regression, where we obtain a confidence interval for $\beta_X$ excluding the true value of 1.</span>
-<span id="cb12-69"><a href="#cb12-69" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-72"><a href="#cb12-72" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
-<span id="cb12-73"><a href="#cb12-73" aria-hidden="true" tabindex="-1"></a><span class="fu">lm</span>(Y <span class="sc">~</span> X, <span class="at">data =</span> dat) <span class="sc">|&gt;</span> <span class="fu">confint</span>()</span>
-<span id="cb12-74"><a href="#cb12-74" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb12-75"><a href="#cb12-75" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-76"><a href="#cb12-76" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-77"><a href="#cb12-77" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-78"><a href="#cb12-78" aria-hidden="true" tabindex="-1"></a><span class="fu"># Bayesian Approach</span></span>
+<span id="cb12-52"><a href="#cb12-52" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-53"><a href="#cb12-53" aria-hidden="true" tabindex="-1"></a><span class="fu"># Maximum Likelihood</span></span>
+<span id="cb12-54"><a href="#cb12-54" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-55"><a href="#cb12-55" aria-hidden="true" tabindex="-1"></a>We perform maximum likelihood estimation as described in @evans_didelez_2023 . The observational likelihood is given by</span>
+<span id="cb12-56"><a href="#cb12-56" aria-hidden="true" tabindex="-1"></a>\begin{align*}</span>
+<span id="cb12-57"><a href="#cb12-57" aria-hidden="true" tabindex="-1"></a>    p_{ZXY}(z, x, y | \theta^*) &amp;= p_{ZX}(z, x | \theta_{ZX}) p_{Y|ZX}^*(y|z, x; \theta_{Y|X}^*, \phi_{YZ | X}^*) <span class="sc">\\</span></span>
+<span id="cb12-58"><a href="#cb12-58" aria-hidden="true" tabindex="-1"></a>    &amp;= p_{ZX}(z, x | \theta_{ZX}) p_{Y|X}^*(y | x; \theta_{Y|X}^*) c(y, z| x; \phi_{YZ | X}^*),</span>
+<span id="cb12-59"><a href="#cb12-59" aria-hidden="true" tabindex="-1"></a>\end{align*}</span>
+<span id="cb12-60"><a href="#cb12-60" aria-hidden="true" tabindex="-1"></a>where $c(y, z| x; \phi_{YZ | X}^*)$ is a copula density. By substituting $p_{ZX}$ for the causal distribution $p_{ZX}^*$, where $Z$ and $X$ are independent, we obtain the causal likelihood. Now, we can maximise the causal likelihood w.r.t. the observational data to obtain an estimate for $\beta$. This is done below using the implementation by Robin Evans.</span>
+<span id="cb12-61"><a href="#cb12-61" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-62"><a href="#cb12-62" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-65"><a href="#cb12-65" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb12-66"><a href="#cb12-66" aria-hidden="true" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">fitCausal</span>(dat, <span class="at">formulas =</span> <span class="fu">list</span>(Y <span class="sc">~</span> X, Z <span class="sc">~</span> <span class="dv">1</span>, <span class="sc">~</span> X),</span>
+<span id="cb12-67"><a href="#cb12-67" aria-hidden="true" tabindex="-1"></a>                 <span class="at">family =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">1</span>), <span class="at">control=</span><span class="fu">list</span>(<span class="at">maxit=</span><span class="fl">2e4</span>, <span class="at">newton=</span><span class="cn">TRUE</span>))</span>
+<span id="cb12-68"><a href="#cb12-68" aria-hidden="true" tabindex="-1"></a>fit</span>
+<span id="cb12-69"><a href="#cb12-69" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb12-70"><a href="#cb12-70" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-71"><a href="#cb12-71" aria-hidden="true" tabindex="-1"></a>The estimate is close to the true value of 1. For comparison, we can also perform a naive outcome regression, where we obtain a confidence interval for $\beta_X$ excluding the true value of 1.</span>
+<span id="cb12-72"><a href="#cb12-72" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-75"><a href="#cb12-75" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb12-76"><a href="#cb12-76" aria-hidden="true" tabindex="-1"></a><span class="fu">lm</span>(Y <span class="sc">~</span> X, <span class="at">data =</span> dat) <span class="sc">|&gt;</span> <span class="fu">confint</span>()</span>
+<span id="cb12-77"><a href="#cb12-77" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb12-78"><a href="#cb12-78" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb12-79"><a href="#cb12-79" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb12-80"><a href="#cb12-80" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-81"><a href="#cb12-81" aria-hidden="true" tabindex="-1"></a><span class="fu">## Plug-In </span></span>
+<span id="cb12-81"><a href="#cb12-81" aria-hidden="true" tabindex="-1"></a><span class="fu"># Bayesian Approach</span></span>
 <span id="cb12-82"><a href="#cb12-82" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-83"><a href="#cb12-83" aria-hidden="true" tabindex="-1"></a>Now, we try to fit this in a Bayesian fashion. We implement a simple Metropolis algorithm using a diffuse prior, and a (truncated) multivariate normal jump distribution. I manually implemented a log-likelihood function, using a Gaussian copula with correlation parameter $\phi = \text{Cor}(Y, Z | X)$. As a first approach, $\phi$ is estimated as a linear function of $X$, but since $X$ is binary I will simply take the mean of each group. This plug-in approach is obviously not fully Bayesian (see further below for a fully Bayesian approach).</span>
-<span id="cb12-84"><a href="#cb12-84" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-83"><a href="#cb12-83" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-84"><a href="#cb12-84" aria-hidden="true" tabindex="-1"></a><span class="fu">## Plug-In </span></span>
 <span id="cb12-85"><a href="#cb12-85" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-88"><a href="#cb12-88" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
-<span id="cb12-89"><a href="#cb12-89" aria-hidden="true" tabindex="-1"></a>likl <span class="ot">&lt;-</span> <span class="cf">function</span>(theta){</span>
-<span id="cb12-90"><a href="#cb12-90" aria-hidden="true" tabindex="-1"></a>  beta <span class="ot">&lt;-</span> theta[<span class="dv">1</span>]; sigma <span class="ot">&lt;-</span> theta[<span class="dv">2</span>]</span>
-<span id="cb12-91"><a href="#cb12-91" aria-hidden="true" tabindex="-1"></a>  beta_z <span class="ot">&lt;-</span> theta[<span class="dv">3</span>]; sigma_z <span class="ot">&lt;-</span> theta[<span class="dv">4</span>]</span>
-<span id="cb12-92"><a href="#cb12-92" aria-hidden="true" tabindex="-1"></a>  phi_1 <span class="ot">&lt;-</span> theta[<span class="dv">5</span>]; phi_0 <span class="ot">&lt;-</span> theta[<span class="dv">6</span>]</span>
-<span id="cb12-93"><a href="#cb12-93" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb12-94"><a href="#cb12-94" aria-hidden="true" tabindex="-1"></a>  <span class="fu">with</span>(dat, {</span>
-<span id="cb12-95"><a href="#cb12-95" aria-hidden="true" tabindex="-1"></a>    <span class="co"># marginal structural model</span></span>
-<span id="cb12-96"><a href="#cb12-96" aria-hidden="true" tabindex="-1"></a>    p_Y_X <span class="ot">&lt;-</span> <span class="fu">dnorm</span>(Y, beta <span class="sc">*</span> X, sigma, <span class="at">log =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span> <span class="fu">sum</span>()</span>
-<span id="cb12-97"><a href="#cb12-97" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb12-98"><a href="#cb12-98" aria-hidden="true" tabindex="-1"></a>    <span class="co"># past</span></span>
-<span id="cb12-99"><a href="#cb12-99" aria-hidden="true" tabindex="-1"></a>    p_ZX <span class="ot">&lt;-</span> <span class="fu">dnorm</span>(Z, beta_z, sigma_z, <span class="at">log =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span> <span class="fu">sum</span>() <span class="sc">+</span></span>
-<span id="cb12-100"><a href="#cb12-100" aria-hidden="true" tabindex="-1"></a>      <span class="fu">dnorm</span>(X, <span class="at">log =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span> <span class="fu">sum</span>()</span>
-<span id="cb12-101"><a href="#cb12-101" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb12-102"><a href="#cb12-102" aria-hidden="true" tabindex="-1"></a>    <span class="co"># get copula density separately by group</span></span>
-<span id="cb12-103"><a href="#cb12-103" aria-hidden="true" tabindex="-1"></a>    bool <span class="ot">&lt;-</span> X <span class="sc">==</span> <span class="dv">1</span></span>
-<span id="cb12-104"><a href="#cb12-104" aria-hidden="true" tabindex="-1"></a>    cop_1 <span class="ot">&lt;-</span> copula<span class="sc">::</span><span class="fu">normalCopula</span>(<span class="at">param =</span> phi_1)</span>
-<span id="cb12-105"><a href="#cb12-105" aria-hidden="true" tabindex="-1"></a>    u_1 <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="cn">NA</span>, <span class="at">nrow =</span> <span class="fu">sum</span>(bool), <span class="at">ncol =</span> <span class="dv">2</span>)</span>
-<span id="cb12-106"><a href="#cb12-106" aria-hidden="true" tabindex="-1"></a>    u_1[, <span class="dv">1</span>] <span class="ot">&lt;-</span> <span class="fu">pnorm</span>(Y[bool], beta <span class="sc">*</span> X[bool], sigma)</span>
-<span id="cb12-107"><a href="#cb12-107" aria-hidden="true" tabindex="-1"></a>    u_1[, <span class="dv">2</span>] <span class="ot">&lt;-</span> <span class="fu">pnorm</span>(Z[bool], beta_z, sigma_z)</span>
-<span id="cb12-108"><a href="#cb12-108" aria-hidden="true" tabindex="-1"></a>    copd_1 <span class="ot">&lt;-</span> copula<span class="sc">::</span><span class="fu">dCopula</span>(cop_1, <span class="at">u =</span> u_1, <span class="at">log =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span> <span class="fu">sum</span>()</span>
-<span id="cb12-109"><a href="#cb12-109" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb12-110"><a href="#cb12-110" aria-hidden="true" tabindex="-1"></a>    cop_0 <span class="ot">&lt;-</span> copula<span class="sc">::</span><span class="fu">normalCopula</span>(<span class="at">param =</span> phi_0)</span>
-<span id="cb12-111"><a href="#cb12-111" aria-hidden="true" tabindex="-1"></a>    u_0 <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="cn">NA</span>, <span class="at">nrow =</span> <span class="fu">sum</span>(<span class="sc">!</span>bool), <span class="at">ncol =</span> <span class="dv">2</span>)</span>
-<span id="cb12-112"><a href="#cb12-112" aria-hidden="true" tabindex="-1"></a>    u_0[, <span class="dv">1</span>] <span class="ot">&lt;-</span> <span class="fu">pnorm</span>(Y[<span class="sc">!</span>bool], beta <span class="sc">*</span> X[<span class="sc">!</span>bool], sigma)</span>
-<span id="cb12-113"><a href="#cb12-113" aria-hidden="true" tabindex="-1"></a>    u_0[, <span class="dv">2</span>] <span class="ot">&lt;-</span> <span class="fu">pnorm</span>(Z[<span class="sc">!</span>bool], beta_z, sigma_z)</span>
-<span id="cb12-114"><a href="#cb12-114" aria-hidden="true" tabindex="-1"></a>    copd_0 <span class="ot">&lt;-</span> copula<span class="sc">::</span><span class="fu">dCopula</span>(cop_0, <span class="at">u =</span> u_0, <span class="at">log =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span> <span class="fu">sum</span>()</span>
-<span id="cb12-115"><a href="#cb12-115" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb12-116"><a href="#cb12-116" aria-hidden="true" tabindex="-1"></a>    copd <span class="ot">&lt;-</span> copd_0 <span class="sc">+</span> copd_1</span>
-<span id="cb12-117"><a href="#cb12-117" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb12-118"><a href="#cb12-118" aria-hidden="true" tabindex="-1"></a>    <span class="co"># return sum (since we did all calculations on a log-scale)</span></span>
-<span id="cb12-119"><a href="#cb12-119" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(p_Y_X <span class="sc">+</span> p_ZX <span class="sc">+</span> copd)</span>
-<span id="cb12-120"><a href="#cb12-120" aria-hidden="true" tabindex="-1"></a>    })</span>
-<span id="cb12-121"><a href="#cb12-121" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb12-122"><a href="#cb12-122" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-123"><a href="#cb12-123" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb12-124"><a href="#cb12-124" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-127"><a href="#cb12-127" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
-<span id="cb12-128"><a href="#cb12-128" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(mvtnorm)</span>
-<span id="cb12-129"><a href="#cb12-129" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-130"><a href="#cb12-130" aria-hidden="true" tabindex="-1"></a><span class="co"># get plug in estimate for phi</span></span>
-<span id="cb12-131"><a href="#cb12-131" aria-hidden="true" tabindex="-1"></a>phi_1 <span class="ot">&lt;-</span> <span class="fu">with</span>(dat, <span class="fu">cor</span>(Y[X <span class="sc">==</span> <span class="dv">1</span>], Z[X <span class="sc">==</span> <span class="dv">1</span>]))</span>
-<span id="cb12-132"><a href="#cb12-132" aria-hidden="true" tabindex="-1"></a>phi_0 <span class="ot">&lt;-</span> <span class="fu">with</span>(dat, <span class="fu">cor</span>(Y[X <span class="sc">==</span> <span class="dv">0</span>], Z[X <span class="sc">==</span> <span class="dv">0</span>]))</span>
-<span id="cb12-133"><a href="#cb12-133" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-134"><a href="#cb12-134" aria-hidden="true" tabindex="-1"></a><span class="co"># prior parameters</span></span>
-<span id="cb12-135"><a href="#cb12-135" aria-hidden="true" tabindex="-1"></a>p <span class="ot">&lt;-</span> <span class="dv">4</span></span>
-<span id="cb12-136"><a href="#cb12-136" aria-hidden="true" tabindex="-1"></a>sigma_p <span class="ot">&lt;-</span> <span class="fu">diag</span>(<span class="fu">rep</span>(<span class="dv">10</span>, p))</span>
-<span id="cb12-137"><a href="#cb12-137" aria-hidden="true" tabindex="-1"></a>mu_p <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">1</span>)</span>
-<span id="cb12-138"><a href="#cb12-138" aria-hidden="true" tabindex="-1"></a>prior <span class="ot">&lt;-</span> <span class="cf">function</span>(theta) <span class="dv">1</span> <span class="sc">/</span> (theta[<span class="dv">2</span>] <span class="sc">*</span> theta[<span class="dv">4</span>])</span>
-<span id="cb12-139"><a href="#cb12-139" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-140"><a href="#cb12-140" aria-hidden="true" tabindex="-1"></a><span class="co"># jump distribution parameters</span></span>
-<span id="cb12-141"><a href="#cb12-141" aria-hidden="true" tabindex="-1"></a>sigma_j <span class="ot">&lt;-</span> <span class="fu">diag</span>(<span class="fu">c</span>(<span class="fl">0.001</span>, <span class="fl">0.001</span>, <span class="fl">0.001</span>, <span class="fl">0.001</span>))</span>
+<span id="cb12-86"><a href="#cb12-86" aria-hidden="true" tabindex="-1"></a>Now, we try to fit this in a Bayesian fashion. We implement a simple Metropolis algorithm using a diffuse prior, and a (truncated) multivariate normal jump distribution. I manually implemented a log-likelihood function, using a Gaussian copula with correlation parameter $\phi = \text{Cor}(Y, Z | X)$. As a first approach, $\phi$ is estimated as a linear function of $X$, but since $X$ is binary I will simply take the mean of each group. This plug-in approach is obviously not fully Bayesian (see further below for a fully Bayesian approach).</span>
+<span id="cb12-87"><a href="#cb12-87" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-88"><a href="#cb12-88" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-91"><a href="#cb12-91" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb12-92"><a href="#cb12-92" aria-hidden="true" tabindex="-1"></a>likl <span class="ot">&lt;-</span> <span class="cf">function</span>(theta){</span>
+<span id="cb12-93"><a href="#cb12-93" aria-hidden="true" tabindex="-1"></a>  beta <span class="ot">&lt;-</span> theta[<span class="dv">1</span>]; sigma <span class="ot">&lt;-</span> theta[<span class="dv">2</span>]</span>
+<span id="cb12-94"><a href="#cb12-94" aria-hidden="true" tabindex="-1"></a>  beta_z <span class="ot">&lt;-</span> theta[<span class="dv">3</span>]; sigma_z <span class="ot">&lt;-</span> theta[<span class="dv">4</span>]</span>
+<span id="cb12-95"><a href="#cb12-95" aria-hidden="true" tabindex="-1"></a>  phi_1 <span class="ot">&lt;-</span> theta[<span class="dv">5</span>]; phi_0 <span class="ot">&lt;-</span> theta[<span class="dv">6</span>]</span>
+<span id="cb12-96"><a href="#cb12-96" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb12-97"><a href="#cb12-97" aria-hidden="true" tabindex="-1"></a>  <span class="fu">with</span>(dat, {</span>
+<span id="cb12-98"><a href="#cb12-98" aria-hidden="true" tabindex="-1"></a>    <span class="co"># marginal structural model</span></span>
+<span id="cb12-99"><a href="#cb12-99" aria-hidden="true" tabindex="-1"></a>    p_Y_X <span class="ot">&lt;-</span> <span class="fu">dnorm</span>(Y, beta <span class="sc">*</span> X, sigma, <span class="at">log =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span> <span class="fu">sum</span>()</span>
+<span id="cb12-100"><a href="#cb12-100" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb12-101"><a href="#cb12-101" aria-hidden="true" tabindex="-1"></a>    <span class="co"># past</span></span>
+<span id="cb12-102"><a href="#cb12-102" aria-hidden="true" tabindex="-1"></a>    p_ZX <span class="ot">&lt;-</span> <span class="fu">dnorm</span>(Z, beta_z, sigma_z, <span class="at">log =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span> <span class="fu">sum</span>() <span class="sc">+</span></span>
+<span id="cb12-103"><a href="#cb12-103" aria-hidden="true" tabindex="-1"></a>      <span class="fu">dnorm</span>(X, <span class="at">log =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span> <span class="fu">sum</span>()</span>
+<span id="cb12-104"><a href="#cb12-104" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb12-105"><a href="#cb12-105" aria-hidden="true" tabindex="-1"></a>    <span class="co"># get copula density separately by group</span></span>
+<span id="cb12-106"><a href="#cb12-106" aria-hidden="true" tabindex="-1"></a>    bool <span class="ot">&lt;-</span> X <span class="sc">==</span> <span class="dv">1</span></span>
+<span id="cb12-107"><a href="#cb12-107" aria-hidden="true" tabindex="-1"></a>    cop_1 <span class="ot">&lt;-</span> copula<span class="sc">::</span><span class="fu">normalCopula</span>(<span class="at">param =</span> phi_1)</span>
+<span id="cb12-108"><a href="#cb12-108" aria-hidden="true" tabindex="-1"></a>    u_1 <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="cn">NA</span>, <span class="at">nrow =</span> <span class="fu">sum</span>(bool), <span class="at">ncol =</span> <span class="dv">2</span>)</span>
+<span id="cb12-109"><a href="#cb12-109" aria-hidden="true" tabindex="-1"></a>    u_1[, <span class="dv">1</span>] <span class="ot">&lt;-</span> <span class="fu">pnorm</span>(Y[bool], beta <span class="sc">*</span> X[bool], sigma)</span>
+<span id="cb12-110"><a href="#cb12-110" aria-hidden="true" tabindex="-1"></a>    u_1[, <span class="dv">2</span>] <span class="ot">&lt;-</span> <span class="fu">pnorm</span>(Z[bool], beta_z, sigma_z)</span>
+<span id="cb12-111"><a href="#cb12-111" aria-hidden="true" tabindex="-1"></a>    copd_1 <span class="ot">&lt;-</span> copula<span class="sc">::</span><span class="fu">dCopula</span>(cop_1, <span class="at">u =</span> u_1, <span class="at">log =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span> <span class="fu">sum</span>()</span>
+<span id="cb12-112"><a href="#cb12-112" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb12-113"><a href="#cb12-113" aria-hidden="true" tabindex="-1"></a>    cop_0 <span class="ot">&lt;-</span> copula<span class="sc">::</span><span class="fu">normalCopula</span>(<span class="at">param =</span> phi_0)</span>
+<span id="cb12-114"><a href="#cb12-114" aria-hidden="true" tabindex="-1"></a>    u_0 <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="cn">NA</span>, <span class="at">nrow =</span> <span class="fu">sum</span>(<span class="sc">!</span>bool), <span class="at">ncol =</span> <span class="dv">2</span>)</span>
+<span id="cb12-115"><a href="#cb12-115" aria-hidden="true" tabindex="-1"></a>    u_0[, <span class="dv">1</span>] <span class="ot">&lt;-</span> <span class="fu">pnorm</span>(Y[<span class="sc">!</span>bool], beta <span class="sc">*</span> X[<span class="sc">!</span>bool], sigma)</span>
+<span id="cb12-116"><a href="#cb12-116" aria-hidden="true" tabindex="-1"></a>    u_0[, <span class="dv">2</span>] <span class="ot">&lt;-</span> <span class="fu">pnorm</span>(Z[<span class="sc">!</span>bool], beta_z, sigma_z)</span>
+<span id="cb12-117"><a href="#cb12-117" aria-hidden="true" tabindex="-1"></a>    copd_0 <span class="ot">&lt;-</span> copula<span class="sc">::</span><span class="fu">dCopula</span>(cop_0, <span class="at">u =</span> u_0, <span class="at">log =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span> <span class="fu">sum</span>()</span>
+<span id="cb12-118"><a href="#cb12-118" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb12-119"><a href="#cb12-119" aria-hidden="true" tabindex="-1"></a>    copd <span class="ot">&lt;-</span> copd_0 <span class="sc">+</span> copd_1</span>
+<span id="cb12-120"><a href="#cb12-120" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb12-121"><a href="#cb12-121" aria-hidden="true" tabindex="-1"></a>    <span class="co"># return sum (since we did all calculations on a log-scale)</span></span>
+<span id="cb12-122"><a href="#cb12-122" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(p_Y_X <span class="sc">+</span> p_ZX <span class="sc">+</span> copd)</span>
+<span id="cb12-123"><a href="#cb12-123" aria-hidden="true" tabindex="-1"></a>    })</span>
+<span id="cb12-124"><a href="#cb12-124" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb12-125"><a href="#cb12-125" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-126"><a href="#cb12-126" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb12-127"><a href="#cb12-127" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-130"><a href="#cb12-130" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb12-131"><a href="#cb12-131" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(mvtnorm)</span>
+<span id="cb12-132"><a href="#cb12-132" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-133"><a href="#cb12-133" aria-hidden="true" tabindex="-1"></a><span class="co"># get plug in estimate for phi</span></span>
+<span id="cb12-134"><a href="#cb12-134" aria-hidden="true" tabindex="-1"></a>phi_1 <span class="ot">&lt;-</span> <span class="fu">with</span>(dat, <span class="fu">cor</span>(Y[X <span class="sc">==</span> <span class="dv">1</span>], Z[X <span class="sc">==</span> <span class="dv">1</span>]))</span>
+<span id="cb12-135"><a href="#cb12-135" aria-hidden="true" tabindex="-1"></a>phi_0 <span class="ot">&lt;-</span> <span class="fu">with</span>(dat, <span class="fu">cor</span>(Y[X <span class="sc">==</span> <span class="dv">0</span>], Z[X <span class="sc">==</span> <span class="dv">0</span>]))</span>
+<span id="cb12-136"><a href="#cb12-136" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-137"><a href="#cb12-137" aria-hidden="true" tabindex="-1"></a><span class="co"># prior parameters</span></span>
+<span id="cb12-138"><a href="#cb12-138" aria-hidden="true" tabindex="-1"></a>p <span class="ot">&lt;-</span> <span class="dv">4</span></span>
+<span id="cb12-139"><a href="#cb12-139" aria-hidden="true" tabindex="-1"></a>sigma_p <span class="ot">&lt;-</span> <span class="fu">diag</span>(<span class="fu">rep</span>(<span class="dv">10</span>, p))</span>
+<span id="cb12-140"><a href="#cb12-140" aria-hidden="true" tabindex="-1"></a>mu_p <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">1</span>)</span>
+<span id="cb12-141"><a href="#cb12-141" aria-hidden="true" tabindex="-1"></a>prior <span class="ot">&lt;-</span> <span class="cf">function</span>(theta) <span class="dv">1</span> <span class="sc">/</span> (theta[<span class="dv">2</span>] <span class="sc">*</span> theta[<span class="dv">4</span>])</span>
 <span id="cb12-142"><a href="#cb12-142" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-143"><a href="#cb12-143" aria-hidden="true" tabindex="-1"></a><span class="co"># initial values</span></span>
-<span id="cb12-144"><a href="#cb12-144" aria-hidden="true" tabindex="-1"></a>theta_0 <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fl">0.5</span>, <span class="fl">1.2</span>, <span class="fl">1.5</span>, <span class="fl">0.8</span>)</span>
+<span id="cb12-143"><a href="#cb12-143" aria-hidden="true" tabindex="-1"></a><span class="co"># jump distribution parameters</span></span>
+<span id="cb12-144"><a href="#cb12-144" aria-hidden="true" tabindex="-1"></a>sigma_j <span class="ot">&lt;-</span> <span class="fu">diag</span>(<span class="fu">c</span>(<span class="fl">0.001</span>, <span class="fl">0.001</span>, <span class="fl">0.001</span>, <span class="fl">0.001</span>))</span>
 <span id="cb12-145"><a href="#cb12-145" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-146"><a href="#cb12-146" aria-hidden="true" tabindex="-1"></a><span class="co"># storage</span></span>
-<span id="cb12-147"><a href="#cb12-147" aria-hidden="true" tabindex="-1"></a>m <span class="ot">&lt;-</span> <span class="fl">5e3</span></span>
-<span id="cb12-148"><a href="#cb12-148" aria-hidden="true" tabindex="-1"></a>warm <span class="ot">&lt;-</span> <span class="fl">1e3</span></span>
-<span id="cb12-149"><a href="#cb12-149" aria-hidden="true" tabindex="-1"></a>store <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="cn">NA</span>, <span class="at">nrow =</span> m, <span class="at">ncol =</span> p)</span>
-<span id="cb12-150"><a href="#cb12-150" aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(store) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;beta&quot;</span>, <span class="st">&quot;sigma&quot;</span>, <span class="st">&quot;beta_Z&quot;</span>, <span class="st">&quot;sigma_Z&quot;</span>)</span>
-<span id="cb12-151"><a href="#cb12-151" aria-hidden="true" tabindex="-1"></a>store[<span class="dv">1</span>, ] <span class="ot">&lt;-</span> theta_0</span>
-<span id="cb12-152"><a href="#cb12-152" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-153"><a href="#cb12-153" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">12</span>)</span>
-<span id="cb12-154"><a href="#cb12-154" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">2</span><span class="sc">:</span>m) {</span>
-<span id="cb12-155"><a href="#cb12-155" aria-hidden="true" tabindex="-1"></a>  curr <span class="ot">&lt;-</span> store[i<span class="dv">-1</span>, ]</span>
-<span id="cb12-156"><a href="#cb12-156" aria-hidden="true" tabindex="-1"></a>  prop <span class="ot">&lt;-</span> <span class="fu">rmvnorm</span>(<span class="dv">1</span>, curr, sigma_j)</span>
-<span id="cb12-157"><a href="#cb12-157" aria-hidden="true" tabindex="-1"></a>  prop[<span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">4</span>)] <span class="ot">&lt;-</span> <span class="fu">ifelse</span>(prop[<span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">4</span>)] <span class="sc">&lt;=</span> <span class="dv">0</span>, <span class="dv">1</span>, prop[<span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">4</span>)])</span>
-<span id="cb12-158"><a href="#cb12-158" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb12-159"><a href="#cb12-159" aria-hidden="true" tabindex="-1"></a>  r <span class="ot">&lt;-</span> (<span class="fu">likl</span>(<span class="fu">c</span>(prop, phi_1, phi_0)) <span class="sc">+</span> <span class="fu">prior</span>(prop)) <span class="sc">-</span> (<span class="fu">likl</span>(<span class="fu">c</span>(curr, phi_1, phi_0)) <span class="sc">+</span> <span class="fu">prior</span>(curr))</span>
-<span id="cb12-160"><a href="#cb12-160" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb12-161"><a href="#cb12-161" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span>(<span class="fu">runif</span>(<span class="dv">1</span>) <span class="sc">&lt;</span> <span class="fu">min</span>(<span class="fu">exp</span>(r), <span class="dv">1</span>)){</span>
-<span id="cb12-162"><a href="#cb12-162" aria-hidden="true" tabindex="-1"></a>    store[i, ] <span class="ot">&lt;-</span> prop</span>
-<span id="cb12-163"><a href="#cb12-163" aria-hidden="true" tabindex="-1"></a>  } <span class="cf">else</span>{</span>
-<span id="cb12-164"><a href="#cb12-164" aria-hidden="true" tabindex="-1"></a>    store[i, ] <span class="ot">&lt;-</span> curr</span>
-<span id="cb12-165"><a href="#cb12-165" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb12-166"><a href="#cb12-166" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb12-167"><a href="#cb12-167" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb12-168"><a href="#cb12-168" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-169"><a href="#cb12-169" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-170"><a href="#cb12-170" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-171"><a href="#cb12-171" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb12-146"><a href="#cb12-146" aria-hidden="true" tabindex="-1"></a><span class="co"># initial values</span></span>
+<span id="cb12-147"><a href="#cb12-147" aria-hidden="true" tabindex="-1"></a>theta_0 <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fl">0.5</span>, <span class="fl">1.2</span>, <span class="fl">1.5</span>, <span class="fl">0.8</span>)</span>
+<span id="cb12-148"><a href="#cb12-148" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-149"><a href="#cb12-149" aria-hidden="true" tabindex="-1"></a><span class="co"># storage</span></span>
+<span id="cb12-150"><a href="#cb12-150" aria-hidden="true" tabindex="-1"></a>m <span class="ot">&lt;-</span> <span class="fl">5e3</span></span>
+<span id="cb12-151"><a href="#cb12-151" aria-hidden="true" tabindex="-1"></a>warm <span class="ot">&lt;-</span> <span class="fl">1e3</span></span>
+<span id="cb12-152"><a href="#cb12-152" aria-hidden="true" tabindex="-1"></a>store <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="cn">NA</span>, <span class="at">nrow =</span> m, <span class="at">ncol =</span> p)</span>
+<span id="cb12-153"><a href="#cb12-153" aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(store) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;beta&quot;</span>, <span class="st">&quot;sigma&quot;</span>, <span class="st">&quot;beta_Z&quot;</span>, <span class="st">&quot;sigma_Z&quot;</span>)</span>
+<span id="cb12-154"><a href="#cb12-154" aria-hidden="true" tabindex="-1"></a>store[<span class="dv">1</span>, ] <span class="ot">&lt;-</span> theta_0</span>
+<span id="cb12-155"><a href="#cb12-155" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-156"><a href="#cb12-156" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">12</span>)</span>
+<span id="cb12-157"><a href="#cb12-157" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">2</span><span class="sc">:</span>m) {</span>
+<span id="cb12-158"><a href="#cb12-158" aria-hidden="true" tabindex="-1"></a>  curr <span class="ot">&lt;-</span> store[i<span class="dv">-1</span>, ]</span>
+<span id="cb12-159"><a href="#cb12-159" aria-hidden="true" tabindex="-1"></a>  prop <span class="ot">&lt;-</span> <span class="fu">rmvnorm</span>(<span class="dv">1</span>, curr, sigma_j)</span>
+<span id="cb12-160"><a href="#cb12-160" aria-hidden="true" tabindex="-1"></a>  prop[<span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">4</span>)] <span class="ot">&lt;-</span> <span class="fu">ifelse</span>(prop[<span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">4</span>)] <span class="sc">&lt;=</span> <span class="dv">0</span>, <span class="dv">1</span>, prop[<span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">4</span>)])</span>
+<span id="cb12-161"><a href="#cb12-161" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb12-162"><a href="#cb12-162" aria-hidden="true" tabindex="-1"></a>  r <span class="ot">&lt;-</span> (<span class="fu">likl</span>(<span class="fu">c</span>(prop, phi_1, phi_0)) <span class="sc">+</span> <span class="fu">prior</span>(prop)) <span class="sc">-</span> (<span class="fu">likl</span>(<span class="fu">c</span>(curr, phi_1, phi_0)) <span class="sc">+</span> <span class="fu">prior</span>(curr))</span>
+<span id="cb12-163"><a href="#cb12-163" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb12-164"><a href="#cb12-164" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span>(<span class="fu">runif</span>(<span class="dv">1</span>) <span class="sc">&lt;</span> <span class="fu">min</span>(<span class="fu">exp</span>(r), <span class="dv">1</span>)){</span>
+<span id="cb12-165"><a href="#cb12-165" aria-hidden="true" tabindex="-1"></a>    store[i, ] <span class="ot">&lt;-</span> prop</span>
+<span id="cb12-166"><a href="#cb12-166" aria-hidden="true" tabindex="-1"></a>  } <span class="cf">else</span>{</span>
+<span id="cb12-167"><a href="#cb12-167" aria-hidden="true" tabindex="-1"></a>    store[i, ] <span class="ot">&lt;-</span> curr</span>
+<span id="cb12-168"><a href="#cb12-168" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb12-169"><a href="#cb12-169" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb12-170"><a href="#cb12-170" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb12-171"><a href="#cb12-171" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb12-172"><a href="#cb12-172" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb12-173"><a href="#cb12-173" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-174"><a href="#cb12-174" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-177"><a href="#cb12-177" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
-<span id="cb12-178"><a href="#cb12-178" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>), <span class="at">mar =</span> <span class="fu">c</span>(<span class="dv">4</span>, <span class="dv">4</span>, <span class="dv">1</span>, <span class="dv">1</span>))</span>
-<span id="cb12-179"><a href="#cb12-179" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(store[warm<span class="sc">:</span>m, <span class="dv">1</span>], <span class="at">breaks =</span> <span class="dv">40</span>, <span class="at">freq =</span> <span class="cn">FALSE</span>, </span>
-<span id="cb12-180"><a href="#cb12-180" aria-hidden="true" tabindex="-1"></a>     <span class="at">main =</span> <span class="st">&quot;&quot;</span>, <span class="at">xlab =</span> <span class="st">&quot;Beta&quot;</span>)</span>
-<span id="cb12-181"><a href="#cb12-181" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(store[warm<span class="sc">:</span>m, <span class="dv">1</span>], <span class="at">type =</span> <span class="st">&quot;l&quot;</span>,</span>
-<span id="cb12-182"><a href="#cb12-182" aria-hidden="true" tabindex="-1"></a>     <span class="at">main =</span> <span class="st">&quot;&quot;</span>,</span>
-<span id="cb12-183"><a href="#cb12-183" aria-hidden="true" tabindex="-1"></a>     <span class="at">ylab =</span> <span class="st">&quot;Beta&quot;</span>, <span class="at">xlab =</span> <span class="st">&quot;&quot;</span>)</span>
-<span id="cb12-184"><a href="#cb12-184" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb12-185"><a href="#cb12-185" aria-hidden="true" tabindex="-1"></a>The posterior distribution of beta is nicely centered around the true value of 1.</span>
-<span id="cb12-186"><a href="#cb12-186" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-187"><a href="#cb12-187" aria-hidden="true" tabindex="-1"></a><span class="fu">## Fully Bayesian</span></span>
-<span id="cb12-188"><a href="#cb12-188" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-189"><a href="#cb12-189" aria-hidden="true" tabindex="-1"></a>Here, we try a fully Bayesian approach, that is we do not plug in an estimate for $\phi$, but include it in the parameter vector and also obtain a posterior distribution. However, it is important to keep the dependence on the group, so we sample separately for $\phi_1$ and $\phi_0$, where $\phi_i = \text{Cor}(Y, Z | X = i)$.</span>
-<span id="cb12-190"><a href="#cb12-190" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-174"><a href="#cb12-174" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb12-175"><a href="#cb12-175" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-176"><a href="#cb12-176" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-177"><a href="#cb12-177" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-180"><a href="#cb12-180" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb12-181"><a href="#cb12-181" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>), <span class="at">mar =</span> <span class="fu">c</span>(<span class="dv">4</span>, <span class="dv">4</span>, <span class="dv">1</span>, <span class="dv">1</span>))</span>
+<span id="cb12-182"><a href="#cb12-182" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(store[warm<span class="sc">:</span>m, <span class="dv">1</span>], <span class="at">breaks =</span> <span class="dv">40</span>, <span class="at">freq =</span> <span class="cn">FALSE</span>, </span>
+<span id="cb12-183"><a href="#cb12-183" aria-hidden="true" tabindex="-1"></a>     <span class="at">main =</span> <span class="st">&quot;&quot;</span>, <span class="at">xlab =</span> <span class="st">&quot;Beta&quot;</span>)</span>
+<span id="cb12-184"><a href="#cb12-184" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(store[warm<span class="sc">:</span>m, <span class="dv">1</span>], <span class="at">type =</span> <span class="st">&quot;l&quot;</span>,</span>
+<span id="cb12-185"><a href="#cb12-185" aria-hidden="true" tabindex="-1"></a>     <span class="at">main =</span> <span class="st">&quot;&quot;</span>,</span>
+<span id="cb12-186"><a href="#cb12-186" aria-hidden="true" tabindex="-1"></a>     <span class="at">ylab =</span> <span class="st">&quot;Beta&quot;</span>, <span class="at">xlab =</span> <span class="st">&quot;&quot;</span>)</span>
+<span id="cb12-187"><a href="#cb12-187" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb12-188"><a href="#cb12-188" aria-hidden="true" tabindex="-1"></a>The posterior distribution of beta is nicely centered around the true value of 1.</span>
+<span id="cb12-189"><a href="#cb12-189" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-190"><a href="#cb12-190" aria-hidden="true" tabindex="-1"></a><span class="fu">## Fully Bayesian</span></span>
 <span id="cb12-191"><a href="#cb12-191" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-194"><a href="#cb12-194" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
-<span id="cb12-195"><a href="#cb12-195" aria-hidden="true" tabindex="-1"></a><span class="co"># prior parameters</span></span>
-<span id="cb12-196"><a href="#cb12-196" aria-hidden="true" tabindex="-1"></a>p <span class="ot">&lt;-</span> <span class="dv">6</span></span>
-<span id="cb12-197"><a href="#cb12-197" aria-hidden="true" tabindex="-1"></a>sigma_p <span class="ot">&lt;-</span> <span class="fu">diag</span>(<span class="fu">rep</span>(<span class="dv">10</span>, p))</span>
-<span id="cb12-198"><a href="#cb12-198" aria-hidden="true" tabindex="-1"></a>mu_p <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>)</span>
-<span id="cb12-199"><a href="#cb12-199" aria-hidden="true" tabindex="-1"></a>prior <span class="ot">&lt;-</span> <span class="cf">function</span>(theta) <span class="dv">1</span> <span class="sc">/</span> (theta[<span class="dv">2</span>] <span class="sc">*</span> theta[<span class="dv">4</span>])</span>
-<span id="cb12-200"><a href="#cb12-200" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-201"><a href="#cb12-201" aria-hidden="true" tabindex="-1"></a><span class="co"># jump distribution parameters</span></span>
-<span id="cb12-202"><a href="#cb12-202" aria-hidden="true" tabindex="-1"></a>sigma_j <span class="ot">&lt;-</span> <span class="fu">diag</span>(<span class="fu">c</span>(<span class="fl">0.001</span>, <span class="fl">0.001</span>, <span class="fl">0.001</span>, <span class="fl">0.001</span>, <span class="fl">0.001</span>, <span class="fl">0.001</span>))</span>
+<span id="cb12-192"><a href="#cb12-192" aria-hidden="true" tabindex="-1"></a>Here, we try a fully Bayesian approach, that is we do not plug in an estimate for $\phi$, but include it in the parameter vector and also obtain a posterior distribution. However, it is important to keep the dependence on the group, so we sample separately for $\phi_1$ and $\phi_0$, where $\phi_i = \text{Cor}(Y, Z | X = i)$.</span>
+<span id="cb12-193"><a href="#cb12-193" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-194"><a href="#cb12-194" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-197"><a href="#cb12-197" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb12-198"><a href="#cb12-198" aria-hidden="true" tabindex="-1"></a><span class="co"># prior parameters</span></span>
+<span id="cb12-199"><a href="#cb12-199" aria-hidden="true" tabindex="-1"></a>p <span class="ot">&lt;-</span> <span class="dv">6</span></span>
+<span id="cb12-200"><a href="#cb12-200" aria-hidden="true" tabindex="-1"></a>sigma_p <span class="ot">&lt;-</span> <span class="fu">diag</span>(<span class="fu">rep</span>(<span class="dv">10</span>, p))</span>
+<span id="cb12-201"><a href="#cb12-201" aria-hidden="true" tabindex="-1"></a>mu_p <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>)</span>
+<span id="cb12-202"><a href="#cb12-202" aria-hidden="true" tabindex="-1"></a>prior <span class="ot">&lt;-</span> <span class="cf">function</span>(theta) <span class="dv">1</span> <span class="sc">/</span> (theta[<span class="dv">2</span>] <span class="sc">*</span> theta[<span class="dv">4</span>])</span>
 <span id="cb12-203"><a href="#cb12-203" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-204"><a href="#cb12-204" aria-hidden="true" tabindex="-1"></a><span class="co"># initial values</span></span>
-<span id="cb12-205"><a href="#cb12-205" aria-hidden="true" tabindex="-1"></a>theta_0 <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fl">0.5</span>, <span class="fl">1.2</span>, <span class="fl">1.5</span>, <span class="fl">0.8</span>, <span class="dv">0</span>, <span class="dv">0</span>)</span>
+<span id="cb12-204"><a href="#cb12-204" aria-hidden="true" tabindex="-1"></a><span class="co"># jump distribution parameters</span></span>
+<span id="cb12-205"><a href="#cb12-205" aria-hidden="true" tabindex="-1"></a>sigma_j <span class="ot">&lt;-</span> <span class="fu">diag</span>(<span class="fu">c</span>(<span class="fl">0.001</span>, <span class="fl">0.001</span>, <span class="fl">0.001</span>, <span class="fl">0.001</span>, <span class="fl">0.001</span>, <span class="fl">0.001</span>))</span>
 <span id="cb12-206"><a href="#cb12-206" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-207"><a href="#cb12-207" aria-hidden="true" tabindex="-1"></a><span class="co"># storage</span></span>
-<span id="cb12-208"><a href="#cb12-208" aria-hidden="true" tabindex="-1"></a>m <span class="ot">&lt;-</span> <span class="fl">5e3</span></span>
-<span id="cb12-209"><a href="#cb12-209" aria-hidden="true" tabindex="-1"></a>warm <span class="ot">&lt;-</span> <span class="fl">1e3</span></span>
-<span id="cb12-210"><a href="#cb12-210" aria-hidden="true" tabindex="-1"></a>store <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="cn">NA</span>, <span class="at">nrow =</span> m, <span class="at">ncol =</span> p)</span>
-<span id="cb12-211"><a href="#cb12-211" aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(store) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;beta&quot;</span>, <span class="st">&quot;sigma&quot;</span>, <span class="st">&quot;beta_Z&quot;</span>, <span class="st">&quot;sigma_Z&quot;</span>, <span class="st">&quot;phi_1&quot;</span>, <span class="st">&quot;phi_0&quot;</span>)</span>
-<span id="cb12-212"><a href="#cb12-212" aria-hidden="true" tabindex="-1"></a>store[<span class="dv">1</span>, ] <span class="ot">&lt;-</span> theta_0</span>
-<span id="cb12-213"><a href="#cb12-213" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-214"><a href="#cb12-214" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">12</span>)</span>
-<span id="cb12-215"><a href="#cb12-215" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">2</span><span class="sc">:</span>m) {</span>
-<span id="cb12-216"><a href="#cb12-216" aria-hidden="true" tabindex="-1"></a>  curr <span class="ot">&lt;-</span> store[i<span class="dv">-1</span>, ]</span>
-<span id="cb12-217"><a href="#cb12-217" aria-hidden="true" tabindex="-1"></a>  prop <span class="ot">&lt;-</span> <span class="fu">rmvnorm</span>(<span class="dv">1</span>, curr, sigma_j)</span>
-<span id="cb12-218"><a href="#cb12-218" aria-hidden="true" tabindex="-1"></a>  prop[<span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">4</span>)] <span class="ot">&lt;-</span> <span class="fu">ifelse</span>(prop[<span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">4</span>)] <span class="sc">&lt;=</span> <span class="dv">0</span>, <span class="dv">1</span>, prop[<span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">4</span>)])</span>
-<span id="cb12-219"><a href="#cb12-219" aria-hidden="true" tabindex="-1"></a>  prop[<span class="dv">5</span>] <span class="ot">&lt;-</span> <span class="fu">ifelse</span>(prop[<span class="dv">5</span>] <span class="sc">&lt;</span> <span class="sc">-</span><span class="dv">1</span> <span class="sc">|</span> prop[<span class="dv">5</span>] <span class="sc">&gt;</span> <span class="dv">1</span>, <span class="dv">0</span>, prop[<span class="dv">5</span>])</span>
-<span id="cb12-220"><a href="#cb12-220" aria-hidden="true" tabindex="-1"></a>  prop[<span class="dv">6</span>] <span class="ot">&lt;-</span> <span class="fu">ifelse</span>(prop[<span class="dv">6</span>] <span class="sc">&lt;</span> <span class="sc">-</span><span class="dv">1</span> <span class="sc">|</span> prop[<span class="dv">6</span>] <span class="sc">&gt;</span> <span class="dv">1</span>, <span class="dv">0</span>, prop[<span class="dv">6</span>])</span>
-<span id="cb12-221"><a href="#cb12-221" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb12-222"><a href="#cb12-222" aria-hidden="true" tabindex="-1"></a>  r <span class="ot">&lt;-</span> (<span class="fu">likl</span>(prop) <span class="sc">+</span> <span class="fu">prior</span>(prop)) <span class="sc">-</span> (<span class="fu">likl</span>(curr) <span class="sc">+</span> <span class="fu">prior</span>(curr))</span>
-<span id="cb12-223"><a href="#cb12-223" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb12-224"><a href="#cb12-224" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span>(<span class="fu">runif</span>(<span class="dv">1</span>) <span class="sc">&lt;</span> <span class="fu">min</span>(<span class="fu">exp</span>(r), <span class="dv">1</span>)){</span>
-<span id="cb12-225"><a href="#cb12-225" aria-hidden="true" tabindex="-1"></a>    store[i, ] <span class="ot">&lt;-</span> prop</span>
-<span id="cb12-226"><a href="#cb12-226" aria-hidden="true" tabindex="-1"></a>  } <span class="cf">else</span>{</span>
-<span id="cb12-227"><a href="#cb12-227" aria-hidden="true" tabindex="-1"></a>    store[i, ] <span class="ot">&lt;-</span> curr</span>
-<span id="cb12-228"><a href="#cb12-228" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb12-229"><a href="#cb12-229" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb12-230"><a href="#cb12-230" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb12-231"><a href="#cb12-231" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-232"><a href="#cb12-232" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb12-233"><a href="#cb12-233" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-207"><a href="#cb12-207" aria-hidden="true" tabindex="-1"></a><span class="co"># initial values</span></span>
+<span id="cb12-208"><a href="#cb12-208" aria-hidden="true" tabindex="-1"></a>theta_0 <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fl">0.5</span>, <span class="fl">1.2</span>, <span class="fl">1.5</span>, <span class="fl">0.8</span>, <span class="dv">0</span>, <span class="dv">0</span>)</span>
+<span id="cb12-209"><a href="#cb12-209" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-210"><a href="#cb12-210" aria-hidden="true" tabindex="-1"></a><span class="co"># storage</span></span>
+<span id="cb12-211"><a href="#cb12-211" aria-hidden="true" tabindex="-1"></a>m <span class="ot">&lt;-</span> <span class="fl">5e3</span></span>
+<span id="cb12-212"><a href="#cb12-212" aria-hidden="true" tabindex="-1"></a>warm <span class="ot">&lt;-</span> <span class="fl">1e3</span></span>
+<span id="cb12-213"><a href="#cb12-213" aria-hidden="true" tabindex="-1"></a>store <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="cn">NA</span>, <span class="at">nrow =</span> m, <span class="at">ncol =</span> p)</span>
+<span id="cb12-214"><a href="#cb12-214" aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(store) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;beta&quot;</span>, <span class="st">&quot;sigma&quot;</span>, <span class="st">&quot;beta_Z&quot;</span>, <span class="st">&quot;sigma_Z&quot;</span>, <span class="st">&quot;phi_1&quot;</span>, <span class="st">&quot;phi_0&quot;</span>)</span>
+<span id="cb12-215"><a href="#cb12-215" aria-hidden="true" tabindex="-1"></a>store[<span class="dv">1</span>, ] <span class="ot">&lt;-</span> theta_0</span>
+<span id="cb12-216"><a href="#cb12-216" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-217"><a href="#cb12-217" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">12</span>)</span>
+<span id="cb12-218"><a href="#cb12-218" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">2</span><span class="sc">:</span>m) {</span>
+<span id="cb12-219"><a href="#cb12-219" aria-hidden="true" tabindex="-1"></a>  curr <span class="ot">&lt;-</span> store[i<span class="dv">-1</span>, ]</span>
+<span id="cb12-220"><a href="#cb12-220" aria-hidden="true" tabindex="-1"></a>  prop <span class="ot">&lt;-</span> <span class="fu">rmvnorm</span>(<span class="dv">1</span>, curr, sigma_j)</span>
+<span id="cb12-221"><a href="#cb12-221" aria-hidden="true" tabindex="-1"></a>  prop[<span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">4</span>)] <span class="ot">&lt;-</span> <span class="fu">ifelse</span>(prop[<span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">4</span>)] <span class="sc">&lt;=</span> <span class="dv">0</span>, <span class="dv">1</span>, prop[<span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">4</span>)])</span>
+<span id="cb12-222"><a href="#cb12-222" aria-hidden="true" tabindex="-1"></a>  prop[<span class="dv">5</span>] <span class="ot">&lt;-</span> <span class="fu">ifelse</span>(prop[<span class="dv">5</span>] <span class="sc">&lt;</span> <span class="sc">-</span><span class="dv">1</span> <span class="sc">|</span> prop[<span class="dv">5</span>] <span class="sc">&gt;</span> <span class="dv">1</span>, <span class="dv">0</span>, prop[<span class="dv">5</span>])</span>
+<span id="cb12-223"><a href="#cb12-223" aria-hidden="true" tabindex="-1"></a>  prop[<span class="dv">6</span>] <span class="ot">&lt;-</span> <span class="fu">ifelse</span>(prop[<span class="dv">6</span>] <span class="sc">&lt;</span> <span class="sc">-</span><span class="dv">1</span> <span class="sc">|</span> prop[<span class="dv">6</span>] <span class="sc">&gt;</span> <span class="dv">1</span>, <span class="dv">0</span>, prop[<span class="dv">6</span>])</span>
+<span id="cb12-224"><a href="#cb12-224" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb12-225"><a href="#cb12-225" aria-hidden="true" tabindex="-1"></a>  r <span class="ot">&lt;-</span> (<span class="fu">likl</span>(prop) <span class="sc">+</span> <span class="fu">prior</span>(prop)) <span class="sc">-</span> (<span class="fu">likl</span>(curr) <span class="sc">+</span> <span class="fu">prior</span>(curr))</span>
+<span id="cb12-226"><a href="#cb12-226" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb12-227"><a href="#cb12-227" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span>(<span class="fu">runif</span>(<span class="dv">1</span>) <span class="sc">&lt;</span> <span class="fu">min</span>(<span class="fu">exp</span>(r), <span class="dv">1</span>)){</span>
+<span id="cb12-228"><a href="#cb12-228" aria-hidden="true" tabindex="-1"></a>    store[i, ] <span class="ot">&lt;-</span> prop</span>
+<span id="cb12-229"><a href="#cb12-229" aria-hidden="true" tabindex="-1"></a>  } <span class="cf">else</span>{</span>
+<span id="cb12-230"><a href="#cb12-230" aria-hidden="true" tabindex="-1"></a>    store[i, ] <span class="ot">&lt;-</span> curr</span>
+<span id="cb12-231"><a href="#cb12-231" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb12-232"><a href="#cb12-232" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb12-233"><a href="#cb12-233" aria-hidden="true" tabindex="-1"></a>}</span>
 <span id="cb12-234"><a href="#cb12-234" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-235"><a href="#cb12-235" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-235"><a href="#cb12-235" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb12-236"><a href="#cb12-236" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-239"><a href="#cb12-239" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
-<span id="cb12-240"><a href="#cb12-240" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>), <span class="at">mar =</span> <span class="fu">c</span>(<span class="dv">4</span>, <span class="dv">4</span>, <span class="dv">1</span>, <span class="dv">1</span>))</span>
-<span id="cb12-241"><a href="#cb12-241" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(store[warm<span class="sc">:</span>m, <span class="dv">1</span>], <span class="at">breaks =</span> <span class="dv">40</span>, <span class="at">freq =</span> <span class="cn">FALSE</span>, </span>
-<span id="cb12-242"><a href="#cb12-242" aria-hidden="true" tabindex="-1"></a>     <span class="at">main =</span> <span class="st">&quot;&quot;</span>, <span class="at">xlab =</span> <span class="st">&quot;Beta&quot;</span>)</span>
-<span id="cb12-243"><a href="#cb12-243" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(store[warm<span class="sc">:</span>m, <span class="dv">1</span>], <span class="at">type =</span> <span class="st">&quot;l&quot;</span>,</span>
-<span id="cb12-244"><a href="#cb12-244" aria-hidden="true" tabindex="-1"></a>     <span class="at">main =</span> <span class="st">&quot;&quot;</span>,</span>
-<span id="cb12-245"><a href="#cb12-245" aria-hidden="true" tabindex="-1"></a>     <span class="at">ylab =</span> <span class="st">&quot;Beta&quot;</span>, <span class="at">xlab =</span> <span class="st">&quot;&quot;</span>)</span>
-<span id="cb12-246"><a href="#cb12-246" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb12-247"><a href="#cb12-247" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-248"><a href="#cb12-248" aria-hidden="true" tabindex="-1"></a>Again the posterior distribution of $\beta$ is centered around the true value of 1.</span>
-<span id="cb12-249"><a href="#cb12-249" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-252"><a href="#cb12-252" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
-<span id="cb12-253"><a href="#cb12-253" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>), <span class="at">mar =</span> <span class="fu">c</span>(<span class="dv">4</span>, <span class="dv">4</span>, <span class="dv">1</span>, <span class="dv">1</span>))</span>
-<span id="cb12-254"><a href="#cb12-254" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(store[warm<span class="sc">:</span>m, <span class="dv">5</span>], <span class="at">breaks =</span> <span class="dv">40</span>, <span class="at">freq =</span> <span class="cn">FALSE</span>, </span>
-<span id="cb12-255"><a href="#cb12-255" aria-hidden="true" tabindex="-1"></a>     <span class="at">main =</span> <span class="st">&quot;&quot;</span>, <span class="at">xlab =</span> <span class="st">&quot;Phi_1&quot;</span>)</span>
-<span id="cb12-256"><a href="#cb12-256" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(store[warm<span class="sc">:</span>m, <span class="dv">6</span>], <span class="at">breaks =</span> <span class="dv">40</span>, <span class="at">freq =</span> <span class="cn">FALSE</span>, </span>
-<span id="cb12-257"><a href="#cb12-257" aria-hidden="true" tabindex="-1"></a>     <span class="at">main =</span> <span class="st">&quot;&quot;</span>, <span class="at">xlab =</span> <span class="st">&quot;Phi_0&quot;</span>)</span>
-<span id="cb12-258"><a href="#cb12-258" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb12-259"><a href="#cb12-259" aria-hidden="true" tabindex="-1"></a>The posterior distributions for $\phi_1$ and $\phi_0$ look very different, suggesting that the relationship between $Z$ and $Y$ heavily depends on the treatment.</span>
-<span id="cb12-260"><a href="#cb12-260" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-261"><a href="#cb12-261" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-237"><a href="#cb12-237" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-238"><a href="#cb12-238" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-239"><a href="#cb12-239" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-242"><a href="#cb12-242" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb12-243"><a href="#cb12-243" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>), <span class="at">mar =</span> <span class="fu">c</span>(<span class="dv">4</span>, <span class="dv">4</span>, <span class="dv">1</span>, <span class="dv">1</span>))</span>
+<span id="cb12-244"><a href="#cb12-244" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(store[warm<span class="sc">:</span>m, <span class="dv">1</span>], <span class="at">breaks =</span> <span class="dv">40</span>, <span class="at">freq =</span> <span class="cn">FALSE</span>, </span>
+<span id="cb12-245"><a href="#cb12-245" aria-hidden="true" tabindex="-1"></a>     <span class="at">main =</span> <span class="st">&quot;&quot;</span>, <span class="at">xlab =</span> <span class="st">&quot;Beta&quot;</span>)</span>
+<span id="cb12-246"><a href="#cb12-246" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(store[warm<span class="sc">:</span>m, <span class="dv">1</span>], <span class="at">type =</span> <span class="st">&quot;l&quot;</span>,</span>
+<span id="cb12-247"><a href="#cb12-247" aria-hidden="true" tabindex="-1"></a>     <span class="at">main =</span> <span class="st">&quot;&quot;</span>,</span>
+<span id="cb12-248"><a href="#cb12-248" aria-hidden="true" tabindex="-1"></a>     <span class="at">ylab =</span> <span class="st">&quot;Beta&quot;</span>, <span class="at">xlab =</span> <span class="st">&quot;&quot;</span>)</span>
+<span id="cb12-249"><a href="#cb12-249" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb12-250"><a href="#cb12-250" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-251"><a href="#cb12-251" aria-hidden="true" tabindex="-1"></a>Again the posterior distribution of $\beta$ is centered around the true value of 1.</span>
+<span id="cb12-252"><a href="#cb12-252" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-255"><a href="#cb12-255" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb12-256"><a href="#cb12-256" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>), <span class="at">mar =</span> <span class="fu">c</span>(<span class="dv">4</span>, <span class="dv">4</span>, <span class="dv">1</span>, <span class="dv">1</span>))</span>
+<span id="cb12-257"><a href="#cb12-257" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(store[warm<span class="sc">:</span>m, <span class="dv">5</span>], <span class="at">breaks =</span> <span class="dv">40</span>, <span class="at">freq =</span> <span class="cn">FALSE</span>, </span>
+<span id="cb12-258"><a href="#cb12-258" aria-hidden="true" tabindex="-1"></a>     <span class="at">main =</span> <span class="st">&quot;&quot;</span>, <span class="at">xlab =</span> <span class="st">&quot;Phi_1&quot;</span>)</span>
+<span id="cb12-259"><a href="#cb12-259" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(store[warm<span class="sc">:</span>m, <span class="dv">6</span>], <span class="at">breaks =</span> <span class="dv">40</span>, <span class="at">freq =</span> <span class="cn">FALSE</span>, </span>
+<span id="cb12-260"><a href="#cb12-260" aria-hidden="true" tabindex="-1"></a>     <span class="at">main =</span> <span class="st">&quot;&quot;</span>, <span class="at">xlab =</span> <span class="st">&quot;Phi_0&quot;</span>)</span>
+<span id="cb12-261"><a href="#cb12-261" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb12-262"><a href="#cb12-262" aria-hidden="true" tabindex="-1"></a>The posterior distributions for $\phi_1$ and $\phi_0$ look very different, suggesting that the relationship between $Z$ and $Y$ heavily depends on the treatment.</span>
+<span id="cb12-263"><a href="#cb12-263" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-264"><a href="#cb12-264" aria-hidden="true" tabindex="-1"></a></span>
 </code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div></div></div></div></div>
 </div> <!-- /content -->
