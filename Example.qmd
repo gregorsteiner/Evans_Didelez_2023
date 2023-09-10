@@ -235,7 +235,7 @@ plot(store[warm:m, 1], type = "l",
      ylab = "Beta", xlab = "")
 ```
 
-Again the posterior distribution of $\beta$ is centered around the true value of 1.
+Again the posterior distribution of $\beta$ is centered around the true value of 1. It seems that the plug-in approach results in a smoother posterior distribution than the fully Bayesian approach.
 
 ```{r}
 par(mfrow = c(1, 2), mar = c(4, 4, 1, 1))
