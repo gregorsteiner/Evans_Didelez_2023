@@ -1,5 +1,5 @@
 ---
-title: "Example"
+title: "Bayesian Inference with a frugal parameterization"
 author: "Gregor Steiner"
 date: last-modified
 editor: visual
@@ -21,7 +21,7 @@ bibliography: references.bib
 
 This notebook works through a simple example using the frugal parameterization proposed by @evans_didelez_2023 . First, we simulate data based on a simple model with an outcome $Y$, a binary treatment $X$, and a confounder $Z$. The setup is
 $$ Z \sim N(\mu_Z, \sigma_Z) \\
-X | Z = z \sim N(z, 1) \\
+X | Z = z \sim Ber( \text{expit}(z)) \\
 Y | \text{do}(X = x) \sim N(\beta x, \sigma^2).$$
 
 Thus, the frugal parameterization consists of $\theta_{ZX} = (\mu_Z, \sigma_Z)$, $\theta_{Y|X}^* = (\beta, \sigma^2)$, and $\phi_{YZ|X}^*$, the correlation parameter of $Y$ and $Z$ conditional on $X$. The data is simulated with $\beta = 1$, $\sigma^2 = 1$, $\mu_Z = 1$ and $\sigma_Z^2 = 1$.
@@ -35,7 +35,7 @@ forms <- list(Z ~ 1,
               ~ X)
 
 pars <- list(Z = list(beta = 1, phi = 1),
-             X = list(beta = c(0, 1), phi = 1),
+             X = list(beta = c(0, 1)),
              Y = list(beta = c(0, 1), phi = 1),
              cop = list(beta = c(0, 1)))
 
@@ -79,7 +79,7 @@ lm(Y ~ X, data = dat) |> confint()
 
 ## Plug-In 
 
-Now, we try to fit this in a Bayesian fashion. We implement a simple Metropolis algorithm using a diffuse prior, and a (truncated) multivariate normal jump distribution. I manually implemented a log-likelihood function, using a Gaussian copula with correlation parameter $\phi = \text{Cor}(Y, Z | X)$. As a first approach, $\phi$ is estimated as a linear function of $X$, but since $X$ is binary I will simply take the mean of each group. This plug-in approach is obviously not fully Bayesian (see further below for a fully Bayesian approach).
+Now, we try to fit this in a Bayesian fashion. We implement a simple Metropolis algorithm using an uninformative prior, and a (truncated) multivariate normal jump distribution. I manually implemented a log-likelihood function, using a Gaussian copula with correlation parameter $\phi = \text{Cor}(Y, Z | X)$. As a first approach, $\phi$ is estimated as a linear function of $X$, but since $X$ is binary I will simply take the mean of each group. This plug-in approach is obviously not fully Bayesian (see further below for a fully Bayesian approach).
 
 
 ```{r}
@@ -94,7 +94,8 @@ likl <- function(theta){
     
     # past
     p_ZX <- dnorm(Z, beta_z, sigma_z, log = TRUE) |> sum() +
-      dnorm(X, log = TRUE) |> sum()
+      dbinom(X, size = 1, prob = mean(X), log = TRUE) |> sum() # not sure about this line
+    # is this really the causal distribution of X?
     
     # get copula density separately by group
     bool <- X == 1
@@ -243,7 +244,7 @@ hist(store[warm:m, 5], breaks = 40, freq = FALSE,
 hist(store[warm:m, 6], breaks = 40, freq = FALSE, 
      main = "", xlab = "Phi_0")
 ```
-The posterior distributions for $\phi_1$ and $\phi_0$ look very different, suggesting that the relationship between $Z$ and $Y$ heavily depends on the treatment.
+The posterior distributions for $\phi_1$ and $\phi_0$ look very different.
 
 
 
