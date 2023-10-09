@@ -76,7 +76,9 @@ Now, we try to fit this in a Bayesian fashion. We implement a simple Metropolis 
 likl <- function(theta){
   beta <- theta[1]; sigma <- theta[2]
   beta_z <- theta[3]; sigma_z <- theta[4]
+  p_X = theta[5]
   phi_1 <- theta[5]; phi_0 <- theta[6]
+  
   
   with(dat, {
     # marginal structural model
@@ -84,7 +86,7 @@ likl <- function(theta){
     
     # past
     p_ZX <- dnorm(Z, beta_z, sigma_z, log = TRUE) |> sum() +
-      dbinom(X, size = 1, prob = mean(X), log = TRUE) |> sum() # not sure about this line
+      dbinom(X, size = 1, prob = p_X, log = TRUE) |> sum() # not sure about this line
     # is this really the causal distribution of X?
     
     # get copula density separately by group
@@ -118,25 +120,26 @@ phi_1 <- with(dat, cor(Y[X == 1], Z[X == 1]))
 phi_0 <- with(dat, cor(Y[X == 0], Z[X == 0]))
 
 # prior
-p = 4
+p = 5
 prior <- function(theta){
   dnorm(theta[1], 0, 10, log = TRUE) + # beta
     dexp(theta[2], 1/10, log = TRUE) + # sigma
     dnorm(theta[3], 0, 10, log = TRUE) + # mu_Z
-    dexp(theta[4], 1/10, log = TRUE) # sigma_Z
+    dexp(theta[4], 1/10, log = TRUE) + # sigma_Z
+    dbeta(theta[5], 1, 1, log = TRUE) # p_X (the causal probability of treatment assignment)
 }
 
 # jump distribution parameters
-sigma_j <- diag(c(0.001, 0.001, 0.001, 0.001))
+sigma_j <- diag(c(0.001, 0.001, 0.001, 0.001, 0.001))
 
 # initial values
-theta_0 <- c(0.5, 1.2, 0.5, 0.8)
+theta_0 <- c(0.5, 1.2, 0.5, 0.8, 0.5)
 
 # storage
 m <- 5e3
 warm <- 1e3
 store <- matrix(NA, nrow = m, ncol = p)
-colnames(store) <- c("beta", "sigma", "beta_Z", "sigma_Z")
+colnames(store) <- c("beta", "sigma", "beta_Z", "sigma_Z", "p_X")
 store[1, ] <- theta_0
 
 set.seed(12)
@@ -176,27 +179,28 @@ Here, we try a fully Bayesian approach, that is we do not plug in an estimate fo
 
 ```{r}
 # prior
-p = 6
+p = 7
 prior <- function(theta){
   dnorm(theta[1], 0, 10, log = TRUE) + # beta
     dexp(theta[2], 1/10, log = TRUE) + # sigma
     dnorm(theta[3], 0, 10, log = TRUE) + # mu_Z
     dexp(theta[4], 1/10, log = TRUE) + # sigma_Z
-    dunif(theta[5], -1, 1, log = TRUE) + # phi_1
-    dunif(theta[6], -1, 1, log = TRUE) # phi_0
+    dbeta(theta[5], 1, 1, log = TRUE) + # p_X (the causal probability of treatment assignment)
+    dunif(theta[6], -1, 1, log = TRUE) + # phi_1
+    dunif(theta[7], -1, 1, log = TRUE) # phi_0
 }
 
 # jump distribution parameters
-sigma_j <- diag(c(0.001, 0.001, 0.001, 0.001, 0.001, 0.001))
+sigma_j <- diag(c(0.001, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001))
 
 # initial values
-theta_0 <- c(0.5, 1.2, 1.5, 0.8, 0, 0)
+theta_0 <- c(0.5, 1.2, 1.5, 0.8, 0.5, 0, 0)
 
 # storage
 m <- 5e3
 warm <- 1e3
 store <- matrix(NA, nrow = m, ncol = p)
-colnames(store) <- c("beta", "sigma", "beta_Z", "sigma_Z", "phi_1", "phi_0")
+colnames(store) <- c("beta", "sigma", "beta_Z", "sigma_Z", "P_X", "phi_1", "phi_0")
 store[1, ] <- theta_0
 
 set.seed(12)
@@ -204,8 +208,9 @@ for (i in 2:m) {
   curr <- store[i-1, ]
   prop <- rmvnorm(1, curr, sigma_j)
   prop[c(2, 4)] <- ifelse(prop[c(2, 4)] <= 0, 1, prop[c(2, 4)])
-  prop[5] <- ifelse(prop[5] < -1 | prop[5] > 1, 0, prop[5])
+  prop[5] <- ifelse(prop[5] <= 0 | prop[5] >= 1, 0.5, prop[5])
   prop[6] <- ifelse(prop[6] < -1 | prop[6] > 1, 0, prop[6])
+  prop[7] <- ifelse(prop[7] < -1 | prop[7] > 1, 0, prop[7])
   
   r <- (likl(prop) + prior(prop)) - (likl(curr) + prior(curr))
   
@@ -242,5 +247,6 @@ The posterior distributions for $\phi_1$ and $\phi_0$ are perhaps slightly off w
 
 # Some Experiments
 
-
 ## Different choices of $\eta$
+
+Above, we implicitly used $p_{ZX}^* = p_Z \cdot p_X^*$, where $p_X^*$ is the causal distribution of $X$ (independent of Z) and parameterized this by $\theta_{ZX} = (\mu_Z, \sigma_Z)$. What happens if one uses a different parameterization of $p_{ZX}^*$, e.g. we could use $\eta(\theta_{ZX}) = (\mu_Z / \sigma_Z, 1 / \sigma_Z^2)$.
