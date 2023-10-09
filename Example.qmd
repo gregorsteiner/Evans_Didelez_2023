@@ -19,14 +19,14 @@ bibliography: references.bib
 
 # Simulate Data
 
-This notebook works through a simple example using the frugal parameterization proposed by @evans_didelez_2023 . First, we simulate data based on a simple model with an outcome $Y$, a binary treatment $X$, and a confounder $Z$. The setup is
-$$ Z \sim N(\mu_Z, \sigma_Z) \\
+This notebook works through a simple example using the frugal parameterization proposed by @evans_didelez_2023 . First, we simulate data based on a simple model with an outcome $Y$, a binary treatment $X$, and a confounder $Z$. The setup is $$ Z \sim N(\mu_Z, \sigma_Z^2) \\
 X | Z = z \sim Ber( \text{expit}(z)) \\
 Y | \text{do}(X = x) \sim N(\beta x, \sigma^2).$$
 
-Thus, the frugal parameterization consists of $\theta_{ZX} = (\mu_Z, \sigma_Z)$, $\theta_{Y|X}^* = (\beta, \sigma^2)$, and $\phi_{YZ|X}^*$, the correlation parameter of $Y$ and $Z$ conditional on $X$. The data is simulated with $\beta = 1$, $\sigma^2 = 1$, $\mu_Z = 1$ and $\sigma_Z^2 = 1$.
+The dependence between $Y$ and $Z$ is modelled using a Gaussian copula with correlation parameter $\phi_{YZ|X}^* = 2 \text{expit}(\alpha_{\phi} + \beta_{\phi} X) - 1$. Thus, the frugal parameterization consists of $\theta_{ZX} = (\mu_Z, \sigma_Z)$, $\theta_{Y|X}^* = (\beta, \sigma^2)$, and $\phi_{YZ|X}^*$, the correlation parameter of $Y$ and $Z$ conditional on $X$. The data is simulated with $\beta = 1$, $\sigma^2 = 1$, $\mu_Z = 1/2$, $\sigma_Z^2 = 4$, $\alpha_{\phi} = 0$, and $\beta_{\phi} = 1$.
 
 ```{r message=FALSE, warning=FALSE}
+#devtools::install_github("rje42/causl")
 library(causl)
 
 forms <- list(Z ~ 1, 
@@ -34,7 +34,7 @@ forms <- list(Z ~ 1,
               Y ~ X, 
               ~ X)
 
-pars <- list(Z = list(beta = 1, phi = 1),
+pars <- list(Z = list(beta = 1/2, phi = 4),
              X = list(beta = c(0, 1)),
              Y = list(beta = c(0, 1), phi = 1),
              cop = list(beta = c(0, 1)))
@@ -47,18 +47,12 @@ dat <- rfrugalParam(n, formulas = forms, pars = pars,
 
 ```
 
-
-
-
 # Maximum Likelihood
 
-We perform maximum likelihood estimation as described in @evans_didelez_2023 . The observational likelihood is given by
-\begin{align*}
-	p_{ZXY}(z, x, y | \theta^*) &= p_{ZX}(z, x | \theta_{ZX}) p_{Y|ZX}^*(y|z, x; \theta_{Y|X}^*, \phi_{YZ | X}^*) \\
-	&= p_{ZX}(z, x | \theta_{ZX}) p_{Y|X}^*(y | x; \theta_{Y|X}^*) c(y, z| x; \phi_{YZ | X}^*),
-\end{align*}
-where $c(y, z| x; \phi_{YZ | X}^*)$ is a copula density. By substituting $p_{ZX}$ for the causal distribution $p_{ZX}^*$, where $Z$ and $X$ are independent, we obtain the causal likelihood. Now, we can maximise the causal likelihood w.r.t. the observational data to obtain an estimate for $\beta$. This is done below using the implementation by Robin Evans.
-
+We perform maximum likelihood estimation as described in @evans_didelez_2023 . The observational likelihood is given by \begin{align*}
+    p_{ZXY}(z, x, y | \theta^*) &= p_{ZX}(z, x | \theta_{ZX}) p_{Y|ZX}^*(y|z, x; \theta_{Y|X}^*, \phi_{YZ | X}^*) \\
+    &= p_{ZX}(z, x | \theta_{ZX}) p_{Y|X}^*(y | x; \theta_{Y|X}^*) c(y, z| x; \phi_{YZ | X}^*),
+\end{align*} where $c(y, z| x; \phi_{YZ | X}^*)$ is a copula density. By substituting $p_{ZX}$ for the causal distribution $p_{ZX}^*$, where $Z$ and $X$ are independent, we obtain the causal likelihood. Now, we can maximise the causal likelihood w.r.t. the observational data to obtain an estimate for $\beta$. This is done below using the implementation by Robin Evans.
 
 ```{r}
 fit <- fitCausal(dat, formulas = list(Y ~ X, Z ~ 1, ~ X),
@@ -72,15 +66,11 @@ The estimate is close to the true value of 1. For comparison, we can also perfor
 lm(Y ~ X, data = dat) |> confint()
 ```
 
-
-
 # Bayesian Approach
 
+## Plug-In
 
-## Plug-In 
-
-Now, we try to fit this in a Bayesian fashion. We implement a simple Metropolis algorithm using an uninformative prior, and a (truncated) multivariate normal jump distribution. I manually implemented a log-likelihood function, using a Gaussian copula with correlation parameter $\phi = \text{Cor}(Y, Z | X)$. As a first approach, $\phi$ is estimated as a linear function of $X$, but since $X$ is binary I will simply take the mean of each group. This plug-in approach is obviously not fully Bayesian (see further below for a fully Bayesian approach).
-
+Now, we try to fit this in a Bayesian fashion. We implement a simple Metropolis algorithm using an uninformative prior, and a (truncated) multivariate normal jump distribution. I manually implemented a log-likelihood function. Since $X$ is binary I will simply take the correlation within each group as a plug-in estimate for the correlation parameter. This plug-in approach is obviously not fully Bayesian (see further below for a fully Bayesian approach).
 
 ```{r}
 likl <- function(theta){
@@ -166,8 +156,6 @@ for (i in 2:m) {
 
 ```
 
-
-
 ```{r}
 par(mfrow = c(1, 2), mar = c(4, 4, 1, 1))
 hist(store[warm:m, 1], breaks = 40, freq = FALSE, 
@@ -176,12 +164,12 @@ plot(store[warm:m, 1], type = "l",
      main = "",
      ylab = "Beta", xlab = "")
 ```
+
 The posterior distribution of beta is nicely centered around the true value of 1.
 
 ## Fully Bayesian
 
 Here, we try a fully Bayesian approach, that is we do not plug in an estimate for $\phi$, but include it in the parameter vector and also obtain a posterior distribution. However, it is important to keep the dependence on the group, so we sample separately for $\phi_1$ and $\phi_0$, where $\phi_i = \text{Cor}(Y, Z | X = i)$.
-
 
 ```{r}
 # prior parameters
@@ -223,9 +211,6 @@ for (i in 2:m) {
 
 ```
 
-
-
-
 ```{r}
 par(mfrow = c(1, 2), mar = c(4, 4, 1, 1))
 hist(store[warm:m, 1], breaks = 40, freq = FALSE, 
@@ -239,12 +224,10 @@ Again the posterior distribution of $\beta$ is centered around the true value of
 
 ```{r}
 par(mfrow = c(1, 2), mar = c(4, 4, 1, 1))
-hist(store[warm:m, 5], breaks = 40, freq = FALSE, 
+hist(store[warm:m, 5], breaks = 30, freq = FALSE, 
      main = "", xlab = "Phi_1")
-hist(store[warm:m, 6], breaks = 40, freq = FALSE, 
+hist(store[warm:m, 6], breaks = 30, freq = FALSE, 
      main = "", xlab = "Phi_0")
 ```
-The posterior distributions for $\phi_1$ and $\phi_0$ look very different.
 
-
-
+The posterior distributions for $\phi_1$ and $\phi_0$ are perhaps slightly off with the true values of $\approx0.46$ and $0$ only being in the tails.
