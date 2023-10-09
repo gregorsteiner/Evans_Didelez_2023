@@ -240,4 +240,7 @@ hist(store[warm:m, 6], breaks = 30, freq = FALSE,
 
 The posterior distributions for $\phi_1$ and $\phi_0$ are perhaps slightly off with the true values of $\approx0.46$ and $0$ only being in the tails.
 
-# 
+# Some Experiments
+
+
+## Different choices of $\eta$
