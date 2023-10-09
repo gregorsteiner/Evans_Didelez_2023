@@ -70,7 +70,7 @@ lm(Y ~ X, data = dat) |> confint()
 
 ## Plug-In
 
-Now, we try to fit this in a Bayesian fashion. We implement a simple Metropolis algorithm using an uninformative prior, and a (truncated) multivariate normal jump distribution. I manually implemented a log-likelihood function. Since $X$ is binary I will simply take the correlation within each group as a plug-in estimate for the correlation parameter. This plug-in approach is obviously not fully Bayesian (see further below for a fully Bayesian approach).
+Now, we try to fit this in a Bayesian fashion. We implement a simple Metropolis algorithm using a (truncated) multivariate normal jump distribution. I manually implemented a log-likelihood function. Since $X$ is binary I will simply take the correlation within each group as a plug-in estimate for the correlation parameter. This plug-in approach is obviously not fully Bayesian (see further below for a fully Bayesian approach). As prior distributions I use normal priors for the location parameters and exponential priors for the scale parameters.
 
 ```{r}
 likl <- function(theta){
@@ -117,17 +117,20 @@ library(mvtnorm)
 phi_1 <- with(dat, cor(Y[X == 1], Z[X == 1]))
 phi_0 <- with(dat, cor(Y[X == 0], Z[X == 0]))
 
-# prior parameters
-p <- 4
-sigma_p <- diag(rep(10, p))
-mu_p <- c(1, 1, 1, 1)
-prior <- function(theta) 1 / (theta[2] * theta[4])
+# prior
+p = 4
+prior <- function(theta){
+  dnorm(theta[1], 0, 10, log = TRUE) + # beta
+    dexp(theta[2], 1/10, log = TRUE) + # sigma
+    dnorm(theta[3], 0, 10, log = TRUE) + # mu_Z
+    dexp(theta[4], 1/10, log = TRUE) # sigma_Z
+}
 
 # jump distribution parameters
 sigma_j <- diag(c(0.001, 0.001, 0.001, 0.001))
 
 # initial values
-theta_0 <- c(0.5, 1.2, 1.5, 0.8)
+theta_0 <- c(0.5, 1.2, 0.5, 0.8)
 
 # storage
 m <- 5e3
@@ -169,14 +172,19 @@ The posterior distribution of beta is nicely centered around the true value of 1
 
 ## Fully Bayesian
 
-Here, we try a fully Bayesian approach, that is we do not plug in an estimate for $\phi$, but include it in the parameter vector and also obtain a posterior distribution. However, it is important to keep the dependence on the group, so we sample separately for $\phi_1$ and $\phi_0$, where $\phi_i = \text{Cor}(Y, Z | X = i)$.
+Here, we try a fully Bayesian approach, that is we do not plug in an estimate for $\phi$, but include it in the parameter vector and also obtain a posterior distribution. However, it is important to keep the dependence on the group, so we sample separately for $\phi_1$ and $\phi_0$, where $\phi_i = \text{Cor}(Y, Z | X = i)$. As prior distributions for the correlation parameters we simply use a uniform on $(-1, 1)$.
 
 ```{r}
-# prior parameters
-p <- 6
-sigma_p <- diag(rep(10, p))
-mu_p <- c(1, 1, 1, 1, 0, 0)
-prior <- function(theta) 1 / (theta[2] * theta[4])
+# prior
+p = 6
+prior <- function(theta){
+  dnorm(theta[1], 0, 10, log = TRUE) + # beta
+    dexp(theta[2], 1/10, log = TRUE) + # sigma
+    dnorm(theta[3], 0, 10, log = TRUE) + # mu_Z
+    dexp(theta[4], 1/10, log = TRUE) + # sigma_Z
+    dunif(theta[5], -1, 1, log = TRUE) + # phi_1
+    dunif(theta[6], -1, 1, log = TRUE) # phi_0
+}
 
 # jump distribution parameters
 sigma_j <- diag(c(0.001, 0.001, 0.001, 0.001, 0.001, 0.001))
@@ -220,7 +228,7 @@ plot(store[warm:m, 1], type = "l",
      ylab = "Beta", xlab = "")
 ```
 
-Again the posterior distribution of $\beta$ is centered around the true value of 1. It seems that the plug-in approach results in a smoother posterior distribution than the fully Bayesian approach.
+Again the posterior distribution of $\beta$ is centered around the true value of 1.
 
 ```{r}
 par(mfrow = c(1, 2), mar = c(4, 4, 1, 1))
@@ -231,3 +239,5 @@ hist(store[warm:m, 6], breaks = 30, freq = FALSE,
 ```
 
 The posterior distributions for $\phi_1$ and $\phi_0$ are perhaps slightly off with the true values of $\approx0.46$ and $0$ only being in the tails.
+
+# 
