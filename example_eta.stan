@@ -12,8 +12,8 @@ data {
   real Z[N];
 }
 parameters {
-  real mu_Z;
-  real<lower=0> sigma_Z;
+  real eta_1;
+  real eta_2;
   real beta;
   real<lower=0> sigma;
   real<lower=0, upper=1> p_X;
@@ -22,21 +22,21 @@ parameters {
 }
 model {
   // priors
-  mu_Z ~ normal(0, 5);
-  beta ~ normal(0, 5);
+  eta_1 ~ normal(0, 5);
+  eta_2 ~ exponential(1);
   p_X ~ beta(1, 1);
-  sigma_Z ~ exponential(0.1);
+  beta ~ normal(0, 5);
   sigma ~ exponential(0.1);
   alpha_phi ~ normal(0, 5);
   beta_phi ~ normal(0, 5);
   
   // model
-  Z ~ normal(mu_Z, sigma_Z);
+  Z ~ normal(eta_1 / sqrt(eta_2), 1 / sqrt(eta_2));
   X ~ bernoulli(p_X);
   for (i in 1:N)
     Y[i] ~ normal(beta * X[i], sigma);
   for (i in 1:N)
-    target += normal_copula(normal_cdf(Z[i], mu_Z, sigma_Z), normal_cdf(Y[i], beta * X[i], sigma), 2 * inv_logit(alpha_phi + beta_phi * X[i]) - 1);
+    target += normal_copula(normal_cdf(Z[i], eta_1 / sqrt(eta_2), 1 / sqrt(eta_2)), normal_cdf(Y[i], beta * X[i], sigma), 2 * inv_logit(alpha_phi + beta_phi * X[i]) - 1);
     
   
 }

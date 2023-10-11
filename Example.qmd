@@ -337,3 +337,56 @@ invisible(
 )
 
 ```
+
+
+# STAN
+
+I was able to implement the model from above in STAN. Here I repeat the analysis from above in STAN, which means multiple chains and better tuning. The only difference is that I sampled $(\alpha_\phi, \beta_\phi)$ instead of $(\phi_1, \phi_0)$ as this was easier to implement in STAN.
+
+## Fully Bayesian
+
+```{r}
+library(rstan)
+options(mc.cores = parallel::detectCores())
+
+fit = stan("example.stan", data = list(
+  "N" = nrow(dat),
+  "Y" = dat$Y,
+  "X" = dat$X,
+  "Z" = dat$Z
+), iter = 2000, warmup = 1000)
+
+
+
+plot(fit)
+
+```
+
+
+
+## Different Parameterization
+
+As above, we have $\eta(\theta_{ZX}) = (\eta_1, \eta_2) = (\mu_Z / \sigma_Z, 1 / \sigma_Z^2)$.
+
+```{r}
+fit_eta = stan("example_eta.stan", data = list(
+  "N" = nrow(dat),
+  "Y" = dat$Y,
+  "X" = dat$X,
+  "Z" = dat$Z
+), iter = 2000, warmup = 1000)
+
+
+
+plot(fit_eta)
+```
+
+
+
+
+
+
+
+
+
+
