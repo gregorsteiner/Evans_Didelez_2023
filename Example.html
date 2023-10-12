@@ -2776,7 +2776,7 @@ X            1.1835788 1.42909257</code></pre>
 </section>
 <section id="bayesian-approach" class="level1" data-number="3">
 <h1 data-number="3"><span class="header-section-number">3</span> Bayesian Approach</h1>
-<p>Here, we try a fully Bayesian approach using normal priors for the location parameters and exponential priors for the scale parameters.</p>
+<p>Here, we try a fully Bayesian approach using normal priors for the location parameters and exponential priors for the scale parameters. I implemented this model in STAN (see the STAN file for more details).</p>
 <div class="cell">
 <details>
 <summary>Code</summary>
@@ -2801,7 +2801,7 @@ X            1.1835788 1.42909257</code></pre>
 </section>
 <section id="different-choices-of-eta" class="level1" data-number="4">
 <h1 data-number="4"><span class="header-section-number">4</span> Different choices of <span class="math inline">\eta</span></h1>
-<p>Above, we implicitly used <span class="math inline">p_{ZX}^* = p_Z \cdot p_X^*</span>, where <span class="math inline">p_X^*</span> is the causal distribution of <span class="math inline">X</span> (independent of Z) and parameterized this by <span class="math inline">\theta_{ZX} = (\mu_Z, \sigma_Z)</span>. What happens if one uses a different parameterization of <span class="math inline">p_{ZX}^*</span>, e.g. we could use <span class="math inline">\eta(\theta_{ZX}) = (\eta_1, \eta_2) = (\mu_Z / \sigma_Z, 1 / \sigma_Z^2)</span>? In this parameterization, one has <span class="math inline">Z \sim N(\eta_1 / \sqrt{\eta_2}, 1/\sqrt{\eta_2})</span> and we put a normal prior on <span class="math inline">\eta_1</span> and an exponential prior on <span class="math inline">\eta_2</span>.</p>
+<p>Above, we implicitly used <span class="math inline">p_{ZX} = p_Z \cdot p_{X|Z}</span> and parameterized this by <span class="math inline">\theta_{ZX} = (\mu_Z, \sigma_Z)</span>. What happens if one uses a different parameterization of <span class="math inline">p_{ZX}</span>, e.g. we could use <span class="math inline">\eta(\theta_{ZX}) = (\eta_1, \eta_2) = (\mu_Z / \sigma_Z, 1 / \sigma_Z^2)</span>? In this parameterization, one has <span class="math inline">Z \sim N(\eta_1 / \sqrt{\eta_2}, 1/\sqrt{\eta_2})</span> and we put a normal prior on <span class="math inline">\eta_1</span> and an exponential prior on <span class="math inline">\eta_2</span>.</p>
 <div class="cell">
 <details>
 <summary>Code</summary>
@@ -3089,7 +3089,7 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
 <span id="cb8-78"><a href="#cb8-78" aria-hidden="true" tabindex="-1"></a><span class="fu"># Bayesian Approach</span></span>
 <span id="cb8-79"><a href="#cb8-79" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb8-80"><a href="#cb8-80" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-81"><a href="#cb8-81" aria-hidden="true" tabindex="-1"></a>Here, we try a fully Bayesian approach using normal priors for the location parameters and exponential priors for the scale parameters.</span>
+<span id="cb8-81"><a href="#cb8-81" aria-hidden="true" tabindex="-1"></a>Here, we try a fully Bayesian approach using normal priors for the location parameters and exponential priors for the scale parameters. I implemented this model in STAN (see the STAN file for more details).</span>
 <span id="cb8-82"><a href="#cb8-82" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb8-85"><a href="#cb8-85" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
 <span id="cb8-86"><a href="#cb8-86" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(rstan)</span>
@@ -3111,7 +3111,7 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
 <span id="cb8-102"><a href="#cb8-102" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb8-103"><a href="#cb8-103" aria-hidden="true" tabindex="-1"></a><span class="fu"># Different choices of $\eta$</span></span>
 <span id="cb8-104"><a href="#cb8-104" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-105"><a href="#cb8-105" aria-hidden="true" tabindex="-1"></a>Above, we implicitly used $p_{ZX}^* = p_Z \cdot p_X^*$, where $p_X^*$ is the causal distribution of $X$ (independent of Z) and parameterized this by $\theta_{ZX} = (\mu_Z, \sigma_Z)$. What happens if one uses a different parameterization of $p_{ZX}^*$, e.g. we could use $\eta(\theta_{ZX}) = (\eta_1, \eta_2) = (\mu_Z / \sigma_Z, 1 / \sigma_Z^2)$? In this parameterization, one has $Z \sim N(\eta_1 / \sqrt{\eta_2}, 1/\sqrt{\eta_2})$ and we put a normal prior on $\eta_1$ and an exponential prior on $\eta_2$.</span>
+<span id="cb8-105"><a href="#cb8-105" aria-hidden="true" tabindex="-1"></a>Above, we implicitly used $p_{ZX} = p_Z \cdot p_{X|Z}$ and parameterized this by $\theta_{ZX} = (\mu_Z, \sigma_Z)$. What happens if one uses a different parameterization of $p_{ZX}$, e.g. we could use $\eta(\theta_{ZX}) = (\eta_1, \eta_2) = (\mu_Z / \sigma_Z, 1 / \sigma_Z^2)$? In this parameterization, one has $Z \sim N(\eta_1 / \sqrt{\eta_2}, 1/\sqrt{\eta_2})$ and we put a normal prior on $\eta_1$ and an exponential prior on $\eta_2$.</span>
 <span id="cb8-106"><a href="#cb8-106" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb8-109"><a href="#cb8-109" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
 <span id="cb8-110"><a href="#cb8-110" aria-hidden="true" tabindex="-1"></a>fit_eta <span class="ot">=</span> <span class="fu">stan</span>(<span class="st">&quot;example_eta.stan&quot;</span>, <span class="at">data =</span> <span class="fu">list</span>(</span>
