@@ -12,10 +12,10 @@ data {
   real Z[N];
 }
 parameters {
-  real mu_Z;
-  real<lower=0> sigma_Z;
   real beta;
   real<lower=0> sigma;
+  real mu_Z;
+  real<lower=0> sigma_Z;
   real<lower=0, upper=1> p_X;
   real alpha_phi;
   real beta_phi;
@@ -27,7 +27,7 @@ model {
   p_X ~ beta(1, 1);
   sigma_Z ~ exponential(0.1);
   sigma ~ exponential(0.1);
-  alpha_phi ~ normal(0, 5);
+  alpha_phi ~ normal(0, 2);
   beta_phi ~ normal(0, 5);
   
   // model
