@@ -27,7 +27,7 @@ model {
   p_X ~ beta(1, 1);
   sigma_Z ~ exponential(0.1);
   sigma ~ exponential(0.1);
-  alpha_phi ~ normal(0, 2);
+  alpha_phi ~ normal(0, 5);
   beta_phi ~ normal(0, 5);
   
   // model

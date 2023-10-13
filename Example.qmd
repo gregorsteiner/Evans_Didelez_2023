@@ -43,7 +43,7 @@ pars <- list(Z = list(beta = 1/2, phi = 4),
              cop = list(beta = c(0, 1)))
 
 set.seed(12)
-n <- 1e3
+n <- 50
 dat <- rfrugalParam(n, formulas = forms, pars = pars, 
                     family = list(1, 5, 1, 1), careful = FALSE)
 
@@ -63,11 +63,7 @@ fit <- fitCausal(dat, formulas = list(Y ~ X, Z ~ 1, ~ X),
 fit
 ```
 
-The estimate is close to the true value of 1. For comparison, we can also perform a naive outcome regression, where we obtain a confidence interval for $\beta_X$ excluding the true value of 1.
-
-```{r}
-lm(Y ~ X, data = dat) |> confint()
-```
+The estimate is close to the true value of 1.
 
 # Bayesian Approach
 
@@ -84,7 +80,7 @@ fit = stan("example.stan", data = list(
   "Y" = dat$Y,
   "X" = dat$X,
   "Z" = dat$Z
-), iter = 2000, warmup = 1000)
+), iter = 2e4, warmup = 5e3)
 
 
 mcmc_hist(fit)
@@ -102,7 +98,7 @@ fit_eta = stan("example_eta.stan", data = list(
   "Y" = dat$Y,
   "X" = dat$X,
   "Z" = dat$Z
-), iter = 2000, warmup = 1000)
+), iter = 2e4, warmup = 5e3)
 
 
 
