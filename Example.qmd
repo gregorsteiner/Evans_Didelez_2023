@@ -24,9 +24,9 @@ execute:
 
 This notebook works through a simple example using the frugal parameterization proposed by @evans_didelez_2023 . First, we simulate data based on a simple model with an outcome $Y$, a binary treatment $X$, and a confounder $Z$. The setup is $$ Z \sim N(\mu_Z, \sigma_Z^2) \\
 X | Z = z \sim Ber( \text{expit}(z)) \\
-Y | \text{do}(X = x) \sim N(\beta x, \sigma^2).$$
+Y | \text{do}(X = x) \sim N(\alpha + \beta x, \sigma^2).$$
 
-The dependence between $Y$ and $Z$ is modeled using a Gaussian copula with correlation parameter $\phi_{YZ|X}^* = 2 \text{expit}(\alpha_{\phi} + \beta_{\phi} X) - 1$. Thus, the frugal parameterization consists of $\theta_{ZX} = (\mu_Z, \sigma_Z)$, $\theta_{Y|X}^* = (\beta, \sigma^2)$, and $\phi_{YZ|X}^* = (\alpha_\phi, \beta_\phi)$. The data is simulated with $\beta = 1$, $\sigma^2 = 1$, $\mu_Z = 1/2$, $\sigma_Z^2 = 4$, $\alpha_{\phi} = 0$, and $\beta_{\phi} = 1$.
+The dependence between $Y$ and $Z$ is modeled using a Gaussian copula with correlation parameter $\phi_{YZ|X}^* = 2 \text{expit}(\alpha_{\phi} + \beta_{\phi} X) - 1$. Thus, the frugal parameterization consists of $\theta_{ZX} = (\mu_Z, \sigma_Z)$, $\theta_{Y|X}^* = (\alpha, \beta, \sigma^2)$, and $\phi_{YZ|X}^* = (\alpha_\phi, \beta_\phi)$. The data is simulated with $\alpha = 0, \beta = 1$, $\sigma^2 = 1$, $\mu_Z = 1/2$, $\sigma_Z^2 = 4$, $\alpha_{\phi} = 0$, and $\beta_{\phi} = 1$.
 
 ```{r}
 #devtools::install_github("rje42/causl")
@@ -67,7 +67,6 @@ The estimate is close to the true value of 1.
 
 # Bayesian Approach
 
-
 Here, we try a fully Bayesian approach using normal priors for the location parameters and exponential priors for the scale parameters. I implemented this model in STAN (see the STAN file for more details).
 
 ```{r}
@@ -87,7 +86,6 @@ mcmc_hist(fit)
 
 ```
 
-
 # Different choices of $\eta$
 
 Above, we implicitly used $p_{ZX} = p_Z \cdot p_{X|Z}$ and parameterized this by $\theta_{ZX} = (\mu_Z, \sigma_Z)$. What happens if one uses a different parameterization of $p_{ZX}$, e.g. we could use $\eta(\theta_{ZX}) = (\eta_1, \eta_2) = (\mu_Z / \sigma_Z, 1 / \sigma_Z^2)$? In this parameterization, one has $Z \sim N(\eta_1 / \sqrt{\eta_2}, 1/\sqrt{\eta_2})$ and we put a normal prior on $\eta_1$ and an exponential prior on $\eta_2$.
@@ -105,6 +103,3 @@ fit_eta = stan("example_eta.stan", data = list(
 mcmc_hist(fit_eta)
 
 ```
-
-
-
