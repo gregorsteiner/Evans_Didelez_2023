@@ -140,7 +140,7 @@ comp = function(data, iter = 1e3){
   
   # return
   return(list(
-    "alpha" = c(MLE_alpha, PostMed_alpha, PostMedEta_beta),
+    "alpha" = c(MLE_alpha, PostMed_alpha, PostMedEta_alpha),
     "beta" = c(MLE_beta, PostMed_beta, PostMedEta_beta)
     ))
   
@@ -155,34 +155,55 @@ ns = c(50, 1000)
 m = 100
 
 storeList = lapply(ns, function(n){
-  
-  
+
+
   store = matrix(NA, nrow = m, ncol = 2*3,
                        dimnames = list(
                          NULL,
                          c("Alpha MLE", "Alpha Post. Median", "Alpha Post. Median (Eta)",
                            "Beta MLE", "Beta Post. Median", "Beta Post. Median (Eta)")
                          ))
-  
+
   for (i in 1:m) {
     # simulate dataset
-    data = rfrugalParam(n, formulas = forms, pars = pars, 
+    data = rfrugalParam(n, formulas = forms, pars = pars,
                         family = list(1, 5, 1, 1), careful = FALSE)
-    
+
     # compute MLE and posterior medians and store
     res = comp(data, iter = 2e3)
     store[i, 1:3] = res$alpha
     store[i, 4:6] = res$beta
-    
+
   }
-  
+
   return(store)
-  
+
 }) |> setNames(ns)
- 
-head(storeList)
+
+saveRDS(storeList, "SimResults.RDS")
 
 ```
+
+
+```{r}
+par(mfrow = c(2, 2), mar = c(4, 4, 1, 1))
+
+# create boxplots
+lapply(storeList, function(store){
+  
+  dat = store[[1]][, 1:3] |> as.data.frame()
+  colnames(dat) = c("MLE", "Std. Param.", "Alt. Param.")
+  dat = tidyr::pivot_longer(dat, cols = everything())
+  
+  boxplot(value ~ name, data = dat,
+          xlab = "", ylab = "")
+  
+  
+})
+
+```
+
+
 
 
 
