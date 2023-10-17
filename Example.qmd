@@ -106,7 +106,7 @@ mcmc_hist(fit_eta)
 
 # Simulation
 
-Now we will investigate the difference between these two parameterisations in a more systematic way. We will generate 100 datasets from the data generating process above with $n \in \{50, 1000\}$ and compare the MLEs and posterior medians for $\alpha$ and $\beta$, the causal parameters of interest.
+Now we will investigate the difference between these two parameterisations in a more systematic way. We will generate 100 datasets from the data generating process above with sample sizes $n \in \{50, 1000\}$ and compare the MLEs and posterior medians for $\alpha$ and $\beta$, the causal parameters of interest.
 
 ```{r}
 # function that computes posterior medians and MLEs
@@ -154,9 +154,8 @@ comp = function(data, iter = 1e3){
 ns = c(50, 1000)
 m = 100
 
-storeList = list()
-
-for (n in ns) {
+storeList = lapply(ns, function(n){
+  
   
   store = matrix(NA, nrow = m, ncol = 2*3,
                        dimnames = list(
@@ -177,11 +176,10 @@ for (n in ns) {
     
   }
   
-  storeList = c(storeList, list(store))
+  return(store)
   
-}
-
-names(storeList) = ns
+}) |> setNames(ns)
+ 
 head(storeList)
 
 ```

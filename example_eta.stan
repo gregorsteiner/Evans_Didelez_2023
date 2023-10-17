@@ -16,7 +16,7 @@ parameters {
   real beta;
   real<lower=0> sigma;
   real eta_1;
-  real eta_2;
+  real<lower=0> eta_2;
   real<lower=0, upper=1> p_X;
   real alpha_phi;
   real beta_phi;
