@@ -151,7 +151,7 @@ comp = function(data, iter = 1e3){
 
 ```{r}
 # run simulation
-ns = c(50, 1000)
+ns = c(50, 1000, 10000)
 m = 100
 # storeList = lapply(ns, function(n){
 # 
@@ -176,12 +176,14 @@ m = 100
 ```
 
 
-```{r}
+
+```{r fig.height=10}
 #| fig-cap: "MLE and posterior medians for the standard parameterisation (Std. Par.) and alternative parameterisation (Alt. Par.)"
 
 storeList = readRDS("SimResults.RDS")
 
-par(mfrow = c(4, 2), mar = c(2, 2, 2, 1))
+
+par(mfrow = c(6, 2), mar = c(2, 2, 2, 1))
 
 # create boxplots
 invisible(
@@ -198,11 +200,12 @@ invisible(
       
       boxplot(value ~ name, data = dat, col = 4,
               xlab = "", ylab = "", main = paste0(par, ", n = ", n))
+      abline(h = round(mean(dat$value)), col = 2, lty = "dashed")
       
     })
     
     
-  }, storeList, ns)
+  }, storeList[c("50", "1000")], ns[1:2])
 )
 
 ```
