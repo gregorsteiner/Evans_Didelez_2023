@@ -177,7 +177,7 @@ m = 100
 
 
 
-```{r fig.height=10}
+```{r fig.height=12}
 #| fig-cap: "MLE and posterior medians for the standard parameterisation (Std. Par.) and alternative parameterisation (Alt. Par.)"
 
 storeList = readRDS("SimResults.RDS")
@@ -205,7 +205,7 @@ invisible(
     })
     
     
-  }, storeList[c("50", "1000")], ns[1:2])
+  }, storeList, ns)
 )
 
 ```
