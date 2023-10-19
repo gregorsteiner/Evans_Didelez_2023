@@ -175,38 +175,47 @@ m = 100
 
 ```
 
-
-
-```{r fig.height=12}
-#| fig-cap: "MLE and posterior medians for the standard parameterisation (Std. Par.) and alternative parameterisation (Alt. Par.)"
-
+```{r}
+# load data
 storeList = readRDS("SimResults.RDS")
 
+# transform into ggplot format
+datPlot = Map(function(store, n){
+  
+  resList = lapply(store, function(mat){
+    
+    dat = tidyr::pivot_longer(data.frame("par" = rownames(mat), mat), cols = -1)
+    return(dat)
+    
+  })
+  
+  res = do.call(rbind, resList)
+  res$n = n
+  return(res)
+  
+}, storeList, ns) |> do.call(rbind, args = _)
 
-par(mfrow = c(6, 2), mar = c(2, 2, 2, 1))
+# some cosmetics
+datPlot$name = factor(datPlot$name, levels = unique(datPlot$name))
+levels(datPlot$name) = c("MLE", "Std. Par.", "Alt. Par.")
+datPlot$n = paste0("n = ", datPlot$n)
+datPlot$n = factor(datPlot$n, levels = paste0("n = ", c(50, 1000, 10000)))
 
-# create boxplots
-invisible(
-  Map(function(store, n){
-    
-    pars = rownames(store[[1]])
-    lapply(pars, function(par){
-      
-      dat = sapply(store, function(x) x[par, ]) |> t() |> as.data.frame()
-      
-      colnames(dat) = c("MLE", "Std. Par.", "Alt. Par.")
-      dat = tidyr::pivot_longer(dat, cols = everything())
-      dat$name = factor(dat$name, levels = c("MLE", "Std. Par.", "Alt. Par."))
-      
-      boxplot(value ~ name, data = dat, col = 4,
-              xlab = "", ylab = "", main = paste0(par, ", n = ", n))
-      abline(h = round(mean(dat$value)), col = 2, lty = "dashed")
-      
-    })
-    
-    
-  }, storeList, ns)
-)
+```
+
+
+```{r fig.height=10, fig.width=10}
+#| fig-cap: "MLE and posterior medians for the standard parameterisation (Std. Par.) and alternative parameterisation (Alt. Par.)"
+library(ggplot2)
+
+ggplot(datPlot, aes(x = name, y = value, fill = par)) +
+  geom_jitter() +
+  geom_boxplot(alpha = 0.8) +
+  facet_grid(par ~ n, scales = "free") +
+  theme_bw() +
+  theme(legend.position="none") +
+  labs(x = "", y = "")
+
 
 ```
 
