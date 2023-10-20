@@ -216,6 +216,7 @@ ggplot(datPlot, aes(x = name, y = value, fill = par)) +
   theme(legend.position="none") +
   labs(x = "", y = "")
 
+ggsave("SimResults.pdf")
 
 ```
 

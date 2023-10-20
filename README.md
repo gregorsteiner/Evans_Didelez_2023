@@ -1,1 +1,1 @@
-This repository collects my notes on the paper "Parameterizing and Simulating from Causal Models" by Robin Evans and Vanessa Didelez.
+This is our contribution to the discussion of "Parameterizing and Simulating from Causal Models" by Robin Evans and Vanessa Didelez. In particular, this repository includes code to reproduce our simulation results and STAN code to fit the Bayesian models.
