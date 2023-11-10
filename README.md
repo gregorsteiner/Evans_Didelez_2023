@@ -1,1 +1,1 @@
-This is our contribution to the discussion of "Parameterizing and Simulating from Causal Models" by Robin Evans and Vanessa Didelez. In particular, this repository includes code to reproduce our simulation results and STAN code to fit the Bayesian models.
+This is our contribution to the discussion of "Parameterizing and Simulating from Causal Models" by Robin Evans and Vanessa Didelez, read as an RSS discussion paper on 3 October, 2023. Within this repository, you will find the code to replicate our simulation results, along with STAN code to fit the Bayesian models.
